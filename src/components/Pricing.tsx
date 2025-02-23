@@ -1,11 +1,15 @@
+
 import { Button } from "./ui/button";
 import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const plans = [
   {
     name: "Free",
+    id: "free",
     price: "$0",
     description: "Perfect for getting started",
     features: ["1 User", "Basic features", "Limited support"],
@@ -13,6 +17,7 @@ const plans = [
   },
   {
     name: "Pro",
+    id: "pro",
     price: "$19",
     description: "For serious users",
     features: ["5 Users", "Advanced features", "Priority support"],
@@ -20,6 +25,7 @@ const plans = [
   },
   {
     name: "Enterprise",
+    id: "enterprise",
     price: "$49",
     description: "For large teams",
     features: ["Unlimited Users", "Custom features", "Dedicated support"],
@@ -31,13 +37,30 @@ export const Pricing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const handleSubscribe = (planName: string) => {
+  const handleSubscribe = async (planId: string) => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    // We'll implement Stripe integration in the next step
-    console.log(`Selected plan: ${planName}`);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { planId, userId: user.id },
+      });
+
+      if (error) throw error;
+
+      if (planId === 'free') {
+        toast.success('Successfully subscribed to the free plan!');
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Something went wrong');
+    }
   };
 
   return (
@@ -48,8 +71,7 @@ export const Pricing = () => {
             Simple, transparent pricing
           </h2>
           <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-            Choose the plan that's right for you. Upgrade or downgrade at any
-            time.
+            Choose the plan that's right for you. Upgrade or downgrade at any time.
           </p>
         </div>
 
@@ -81,7 +103,10 @@ export const Pricing = () => {
                   ))}
                 </ul>
                 <div className="mt-6">
-                  <Button className="w-full" onClick={() => handleSubscribe(plan.name)}>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => handleSubscribe(plan.id)}
+                  >
                     {plan.cta}
                   </Button>
                 </div>
