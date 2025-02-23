@@ -8,10 +8,11 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
 })
 
+// Replace these with your actual Stripe price IDs after creating products in Stripe Dashboard
 const PLANS = {
   free: { price: 0 },
-  pro: { price_id: 'price_CHANGE_THIS' }, // You'll need to replace this with your Stripe price ID
-  enterprise: { price_id: 'price_CHANGE_THIS' }, // You'll need to replace this with your Stripe price ID
+  pro: { price_id: 'price_CHANGE_THIS' },
+  enterprise: { price_id: 'price_CHANGE_THIS' }
 }
 
 const corsHeaders = {
@@ -28,7 +29,7 @@ serve(async (req) => {
   try {
     const { planId, userId } = await req.json()
     
-    // Get the user's email from Supabase
+    // Get user profile from Supabase
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -41,15 +42,21 @@ serve(async (req) => {
       .single()
 
     if (userError || !userData?.email) {
+      console.error('User not found:', userError)
       throw new Error('User not found')
     }
 
-    // Free plan doesn't need Stripe checkout
+    // Handle free plan subscription
     if (planId === 'free') {
-      await supabaseClient
+      const { error: updateError } = await supabaseClient
         .from('subscriptions')
         .update({ tier: 'free' })
         .eq('user_id', userId)
+      
+      if (updateError) {
+        console.error('Error updating subscription:', updateError)
+        throw new Error('Failed to update subscription')
+      }
       
       return new Response(
         JSON.stringify({ message: 'Subscribed to free plan' }),
@@ -57,6 +64,7 @@ serve(async (req) => {
       )
     }
 
+    // Validate plan
     const plan = PLANS[planId as keyof typeof PLANS]
     if (!plan?.price_id) {
       throw new Error('Invalid plan selected')
