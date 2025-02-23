@@ -16,10 +16,10 @@ export const Hero = () => {
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-32">
         <div className="text-center space-y-8 animate-fadeIn">
           <h1 className="text-5xl md:text-7xl font-bold font-display text-gradient">
-            Make Chores Fun for Everyone
+            ParentPal: Making Chores Fun
           </h1>
           <p className="text-xl md:text-2xl text-neutral-600 max-w-2xl mx-auto">
-            Transform household tasks into exciting adventures with SmartChores - where responsibility meets rewards!
+            Transform household tasks into exciting adventures - where responsibility meets rewards!
           </p>
           <div className="flex justify-center gap-4 pt-4">
             <Button size="lg" className="button-gradient text-lg">
