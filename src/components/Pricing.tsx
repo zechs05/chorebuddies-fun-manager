@@ -1,107 +1,95 @@
-
 import { Button } from "./ui/button";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
 
 const plans = [
   {
     name: "Free",
-    price: "0",
+    price: "$0",
     description: "Perfect for getting started",
-    features: [
-      "1 child account",
-      "Basic chore tracking",
-      "Simple rewards system",
-      "Mobile app access",
-      "Email support"
-    ]
+    features: ["1 User", "Basic features", "Limited support"],
+    cta: "Get started",
   },
   {
     name: "Pro",
-    price: "9.99",
-    description: "Most popular for families",
-    features: [
-      "Up to 3 children",
-      "Advanced chore tracking",
-      "Custom rewards system",
-      "Priority support",
-      "Progress analytics",
-      "Photo verification"
-    ]
+    price: "$19",
+    description: "For serious users",
+    features: ["5 Users", "Advanced features", "Priority support"],
+    cta: "Subscribe",
   },
   {
-    name: "Ultimate",
-    price: "19.99",
-    description: "Complete flexibility and features",
-    features: [
-      "Unlimited children",
-      "Everything in Pro",
-      "Family leaderboards",
-      "Custom chore categories",
-      "24/7 Premium support",
-      "Advanced analytics",
-      "Team challenges"
-    ]
-  }
+    name: "Enterprise",
+    price: "$49",
+    description: "For large teams",
+    features: ["Unlimited Users", "Custom features", "Dedicated support"],
+    cta: "Contact us",
+  },
 ];
 
 export const Pricing = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   const handleSubscribe = (planName: string) => {
-    // This will be implemented once Stripe is connected
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    // We'll implement Stripe integration in the next step
     console.log(`Selected plan: ${planName}`);
   };
 
   return (
-    <section className="py-24 bg-neutral-50">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold font-display text-gradient">
-            Choose Your Plan
+    <div className="bg-white py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+            Simple, transparent pricing
           </h2>
-          <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-            Select the perfect plan for your family and start making chores fun today
+          <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+            Choose the plan that's right for you. Upgrade or downgrade at any
+            time.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="mt-12 space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-6">
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`glass rounded-2xl p-8 flex flex-col ${
-                plan.name === "Pro" ? "transform md:-translate-y-4 ring-2 ring-primary" : ""
-              }`}
+              className="glass rounded-lg shadow-md overflow-hidden"
             >
-              {plan.name === "Pro" && (
-                <span className="bg-primary text-white text-sm font-semibold px-3 py-1 rounded-full w-fit mx-auto -mt-11 mb-6">
-                  Most Popular
-                </span>
-              )}
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold font-display mb-2">{plan.name}</h3>
-                <p className="text-neutral-600 mb-4">{plan.description}</p>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                  <span className="text-neutral-600">/month</span>
+              <div className="p-6">
+                <h3 className="text-2xl font-semibold text-gray-900">
+                  {plan.name}
+                </h3>
+                <div className="mt-4">
+                  <span className="text-5xl font-extrabold text-gray-900">
+                    {plan.price}
+                  </span>
+                  <span className="text-xl text-gray-500">/month</span>
+                </div>
+                <p className="mt-3 text-base text-gray-500">
+                  {plan.description}
+                </p>
+                <ul className="mt-6 space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center text-gray-600">
+                      <Check className="h-5 w-5 mr-2 text-green-500" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6">
+                  <Button className="w-full" onClick={() => handleSubscribe(plan.name)}>
+                    {plan.cta}
+                  </Button>
                 </div>
               </div>
-              <ul className="space-y-4 mb-8 flex-grow">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="text-neutral-600">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                className={`w-full ${plan.name === "Pro" ? "button-gradient" : ""}`}
-                variant={plan.name === "Pro" ? "default" : "outline"}
-                onClick={() => handleSubscribe(plan.name)}
-              >
-                {plan.name === "Free" ? "Get Started" : "Subscribe Now"}
-              </Button>
             </div>
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 };

@@ -22,7 +22,7 @@ export const Hero = () => {
             Transform household tasks into exciting adventures - where responsibility meets rewards!
           </p>
           <div className="flex justify-center gap-4 pt-4">
-            <Button size="lg" className="button-gradient text-lg">
+            <Button size="lg" className="button-gradient text-lg" onClick={() => window.location.href = '/auth'}>
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
