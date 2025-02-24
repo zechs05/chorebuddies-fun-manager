@@ -1,6 +1,17 @@
 
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Users, CheckSquare, Gift, X, Settings, LogOut, ChevronDown } from "lucide-react";
+import { 
+  Home, 
+  CheckSquare, 
+  Gift, 
+  Award,
+  Trophy,
+  MessageSquare,
+  Settings,
+  LogOut,
+  X,
+  ChevronDown
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
@@ -64,7 +75,12 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
   const navItems = [
     { icon: Home, label: "Dashboard", to: "/child-dashboard" },
-    { icon: CheckSquare, label: "My Chores", to: "/chores" }
+    { icon: CheckSquare, label: "My Chores", to: "/chores" },
+    { icon: Gift, label: "Rewards", to: "/child-dashboard/rewards" },
+    { icon: Award, label: "Achievements", to: "/child-dashboard/achievements" },
+    { icon: Trophy, label: "Leaderboard", to: "/child-dashboard/leaderboard" },
+    { icon: MessageSquare, label: "Messages", to: "/child-dashboard/messages" },
+    { icon: Settings, label: "Settings", to: "/child-dashboard/settings" }
   ];
 
   const handleLogout = async () => {
@@ -153,25 +169,15 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
       {/* Footer Actions */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-neutral-200">
-        <div className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => navigate('/settings')}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button
-            variant="destructive"
-            className="w-full justify-start"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
+        <Button
+          variant="destructive"
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Logout
+        </Button>
       </div>
     </aside>
   );
-};
+}
