@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +7,15 @@ import { toast } from "sonner";
 import { AddChoreForm } from "@/components/chores/AddChoreForm";
 import { ChoreList } from "@/components/chores/ChoreList";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { 
+  PlusCircle, 
+  Star, 
+  Gift, 
+  CheckCircle, 
+  Medal,
+  Trophy,
+  Award
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,13 +25,29 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Chore, FamilyMember } from "@/types/chores";
 
 export default function Chores() {
   const { user } = useAuth();
   const [isAddChoreOpen, setIsAddChoreOpen] = useState(false);
   const [isAddFamilyMemberOpen, setIsAddFamilyMemberOpen] = useState(false);
+  const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [newFamilyMember, setNewFamilyMember] = useState({ name: "", role: "child" });
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: familyMembers, isLoading: isFamilyMembersLoading } = useQuery({
@@ -39,31 +62,6 @@ export default function Chores() {
       return data as FamilyMember[];
     },
     enabled: !!user,
-  });
-
-  const addFamilyMemberMutation = useMutation({
-    mutationFn: async (memberData: typeof newFamilyMember) => {
-      const { data, error } = await supabase
-        .from("family_members")
-        .insert({
-          name: memberData.name.trim(),
-          role: memberData.role,
-          user_id: user?.id,
-        })
-        .select();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
-      toast.success("Family member added successfully!");
-      setNewFamilyMember({ name: "", role: "child" });
-      setIsAddFamilyMemberOpen(false);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
   });
 
   const { data: chores, isLoading: isChoresLoading } = useQuery({
@@ -130,6 +128,31 @@ export default function Chores() {
     },
   });
 
+  const addFamilyMemberMutation = useMutation({
+    mutationFn: async (memberData: typeof newFamilyMember) => {
+      const { data, error } = await supabase
+        .from("family_members")
+        .insert({
+          name: memberData.name.trim(),
+          role: memberData.role,
+          user_id: user?.id,
+        })
+        .select();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
+      toast.success("Family member added successfully!");
+      setNewFamilyMember({ name: "", role: "child" });
+      setIsAddFamilyMemberOpen(false);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, choreId: string, type: 'before' | 'after' | 'reference') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -141,6 +164,25 @@ export default function Chores() {
     e.preventDefault();
     if (!newFamilyMember.name.trim() || !user) return;
     addFamilyMemberMutation.mutate(newFamilyMember);
+  };
+
+  const calculateAchievements = (memberId: string) => {
+    const memberChores = chores?.filter(chore => chore.assigned_to === memberId) || [];
+    const completedChores = memberChores.filter(chore => chore.status === 'completed');
+    const totalPoints = completedChores.reduce((sum, chore) => sum + (chore.points || 0), 0);
+    
+    return {
+      totalCompleted: completedChores.length,
+      totalPoints,
+      badges: [
+        { name: "Quick Finisher", earned: completedChores.some(chore => {
+          const completionTime = new Date(chore.updated_at).getTime() - new Date(chore.created_at).getTime();
+          return completionTime < 3600000; // 1 hour
+        })},
+        { name: "Point Master", earned: totalPoints >= 100 },
+        { name: "Consistent Achiever", earned: completedChores.length >= 10 },
+      ]
+    };
   };
 
   return (
@@ -197,6 +239,146 @@ export default function Chores() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Rewards & Achievements Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Rewards & Achievements
+              </CardTitle>
+              <CardDescription>Track progress and unlock rewards</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Label>Select Family Member</Label>
+                  <Select value={selectedMember || ''} onValueChange={setSelectedMember}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Choose member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {familyMembers?.map(member => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {selectedMember && (
+                  <div className="space-y-4 mt-4">
+                    {(() => {
+                      const achievements = calculateAchievements(selectedMember);
+                      return (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-neutral-50 p-4 rounded-lg">
+                              <p className="text-sm text-neutral-600">Completed Chores</p>
+                              <p className="text-2xl font-semibold text-neutral-900">
+                                {achievements.totalCompleted}
+                              </p>
+                            </div>
+                            <div className="bg-neutral-50 p-4 rounded-lg">
+                              <p className="text-sm text-neutral-600">Total Points</p>
+                              <p className="text-2xl font-semibold text-green-600">
+                                {achievements.totalPoints}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-medium">Badges Earned</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {achievements.badges.map(badge => (
+                                <div 
+                                  key={badge.name}
+                                  className={`p-2 rounded-lg text-center ${
+                                    badge.earned 
+                                      ? 'bg-yellow-100 text-yellow-700' 
+                                      : 'bg-neutral-100 text-neutral-400'
+                                  }`}
+                                >
+                                  <Medal className={`h-5 w-5 mx-auto mb-1 ${
+                                    badge.earned ? 'text-yellow-500' : 'text-neutral-400'
+                                  }`} />
+                                  <p className="text-xs font-medium">{badge.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Chore Verification Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                Pending Verifications
+              </CardTitle>
+              <CardDescription>Review and approve completed chores</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {chores
+                  ?.filter(chore => chore.status === 'completed')
+                  .slice(0, 3)
+                  .map(chore => (
+                    <div key={chore.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{chore.title}</p>
+                        <p className="text-sm text-neutral-500">
+                          By {chore.family_members?.name}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        Review
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reward Store Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5 text-purple-500" />
+                Reward Store
+              </CardTitle>
+              <CardDescription>Redeem points for rewards</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  { name: "30min Extra Screen Time", points: 50 },
+                  { name: "Choose Dinner Menu", points: 100 },
+                  { name: "Weekend Activity Pick", points: 200 },
+                ].map(reward => (
+                  <div key={reward.name} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                    <div>
+                      <p className="font-medium">{reward.name}</p>
+                      <p className="text-sm text-green-600">{reward.points} points</p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Redeem
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Existing Chore List */}
         {isFamilyMembersLoading || isChoresLoading ? (
           <p>Loading...</p>
         ) : !familyMembers?.length ? (
