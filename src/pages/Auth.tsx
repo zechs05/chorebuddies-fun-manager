@@ -23,7 +23,7 @@ export default function Auth() {
           setIsLoading(true);
           const { error } = await supabase.auth.verifyOtp({
             token_hash,
-            type: 'email_confirmation',
+            type: 'signup',  // Changed from 'email_confirmation' to 'signup'
           });
           if (error) throw error;
           toast.success("Email confirmed successfully!");
