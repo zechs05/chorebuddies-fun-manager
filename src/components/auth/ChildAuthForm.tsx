@@ -33,28 +33,30 @@ export function ChildAuthForm({ isSignUp, isLoading, setIsLoading }: ChildAuthFo
           throw new Error("This email is not approved for child registration. Please ask your parent to add you to the family first.");
         }
 
-        // Attempt signup
+        // Sign up without email confirmation
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               role: 'child'
-            }
+            },
+            emailRedirectTo: `${window.location.origin}/child-dashboard`
           }
         });
 
         if (signUpError) throw signUpError;
-
-        // After successful signup, attempt sign in
+        
+        toast.success("Registration successful! Signing you in...");
+        
+        // Attempt immediate sign in after signup
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
-          password,
+          password
         });
 
         if (signInError) throw signInError;
 
-        toast.success("Registration successful! Redirecting to your dashboard...");
         navigate("/child-dashboard");
       } else {
         // Regular sign in
@@ -69,7 +71,7 @@ export function ChildAuthForm({ isSignUp, isLoading, setIsLoading }: ChildAuthFo
         navigate("/child-dashboard");
       }
     } catch (error: any) {
-      console.error('Child registration error:', error);
+      console.error('Child authentication error:', error);
       toast.error(error.message);
     } finally {
       setIsLoading(false);
@@ -97,8 +99,8 @@ export function ChildAuthForm({ isSignUp, isLoading, setIsLoading }: ChildAuthFo
         <Input
           id="password"
           name="password"
-          type="password"
           required
+          type="password"
           placeholder="••••••••"
         />
       </div>
