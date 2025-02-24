@@ -18,17 +18,19 @@ export default function Auth() {
       const token_hash = searchParams.get('token_hash');
       const type = searchParams.get('type');
       
-      if (token_hash && type === 'email_confirmation') {
+      // Check if we're in an email confirmation flow
+      if (token_hash && type) {
         try {
           setIsLoading(true);
           const { error } = await supabase.auth.verifyOtp({
             token_hash,
-            type: 'signup',  // Changed from 'email_confirmation' to 'signup'
+            type: 'signup',
           });
           if (error) throw error;
           toast.success("Email confirmed successfully!");
           navigate('/');
         } catch (error: any) {
+          console.error('Verification error:', error);
           toast.error(error.message);
         } finally {
           setIsLoading(false);
@@ -57,20 +59,22 @@ export default function Auth() {
             data: {
               full_name: fullName,
             },
-            emailRedirectTo: window.location.origin + '/auth',
+            emailRedirectTo: `${window.location.origin}/auth`,
           },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account!");
+        toast.success("Please check your email for the confirmation link!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        toast.success("Signed in successfully!");
         navigate("/");
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast.error(error.message);
     } finally {
       setIsLoading(false);
