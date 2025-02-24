@@ -23,7 +23,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/success" element={<Success />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/child-dashboard" element={<Dashboard />} />
+            <Route path="/child-dashboard" element={<ChildDashboard />} />
             <Route path="/chores" element={<Chores />} />
           </Routes>
           <Toaster position="top-center" />

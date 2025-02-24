@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -112,17 +111,22 @@ export default function Auth() {
     try {
       setIsLoading(true);
       
-      // Using type assertion for the RPC call
       const { data, error } = await supabase
         .rpc('check_child_credentials', {
           p_username: username,
           p_password: password
         });
 
-      if (error) throw error;
-      if (!data || !Array.isArray(data) || data.length === 0) {
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data || data.length === 0) {
         throw new Error("Invalid username or password");
       }
+
+      // Store child account info in localStorage for the session
+      localStorage.setItem('childAccount', JSON.stringify(data[0]));
 
       // If credentials are valid, redirect to child dashboard
       toast.success("Welcome back!");
@@ -130,7 +134,7 @@ export default function Auth() {
       
     } catch (error: any) {
       console.error('Child login error:', error);
-      toast.error(error.message);
+      toast.error(error.message || "Invalid username or password");
     } finally {
       setIsLoading(false);
     }
