@@ -100,7 +100,7 @@ export function ChoreFormFields({
             <SelectValue placeholder="Select family member" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Unassigned</SelectItem>
+            <SelectItem value="unassigned">Unassigned</SelectItem>
             {familyMembers?.map((member) => (
               <SelectItem key={member.id} value={member.id}>
                 {member.name}

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
@@ -11,7 +10,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { FamilyMember } from "@/types/chores";
@@ -32,7 +30,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
     title: "",
     description: "",
     points: 0,
-    assigned_to: "",
+    assigned_to: "unassigned",  // Updated default value
     due_date: null as Date | null,
     due_time: "09:00",
     image: null as File | null,
@@ -55,7 +53,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
           title: formData.title.trim(),
           description: formData.description.trim(),
           points: formData.points,
-          assigned_to: formData.assigned_to || null,
+          assigned_to: formData.assigned_to === "unassigned" ? null : formData.assigned_to,
           due_date: fullDueDate?.toISOString() || null,
           user_id: user?.id,
           status: "pending",
@@ -101,7 +99,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
         title: "",
         description: "",
         points: 0,
-        assigned_to: "",
+        assigned_to: "unassigned",
         due_date: null,
         due_time: "09:00",
         image: null,
