@@ -18,8 +18,7 @@ export default function Auth() {
       const token_hash = searchParams.get('token_hash');
       const type = searchParams.get('type');
       
-      // Check if we're in an email confirmation flow
-      if (token_hash && type) {
+      if (token_hash && type === 'signup') {
         try {
           setIsLoading(true);
           const { error } = await supabase.auth.verifyOtp({
@@ -52,7 +51,7 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -63,7 +62,12 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success("Please check your email for the confirmation link!");
+        
+        if (data.user?.identities?.length === 0) {
+          toast.error("This email is already registered. Please sign in instead.");
+        } else {
+          toast.success("Please check your email for the confirmation link!");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
