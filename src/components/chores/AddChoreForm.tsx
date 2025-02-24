@@ -32,7 +32,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
     title: "",
     description: "",
     points: 0,
-    assigned_to: "unassigned",  // Updated default value
+    assigned_to: "unassigned",
     due_date: null as Date | null,
     due_time: "09:00",
     image: null as File | null,
@@ -45,8 +45,9 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
       let fullDueDate = null;
       if (formData.due_date) {
         const [hours, minutes] = formData.due_time.split(':');
-        fullDueDate = new Date(formData.due_date);
-        fullDueDate.setHours(parseInt(hours), parseInt(minutes));
+        const dueDate = new Date(formData.due_date);
+        dueDate.setHours(parseInt(hours), parseInt(minutes));
+        fullDueDate = dueDate;
       }
 
       const { data: newChoreData, error: choreError } = await supabase
