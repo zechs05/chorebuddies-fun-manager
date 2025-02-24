@@ -156,20 +156,18 @@ export function AddFamilyMemberDialog({
             />
           </div>
 
-          {!editingMember && (
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="parent">Parent</SelectItem>
-                  <SelectItem value="child">Child</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="parent">Parent</SelectItem>
+                <SelectItem value="child">Child</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
