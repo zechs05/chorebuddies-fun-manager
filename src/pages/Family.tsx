@@ -60,15 +60,20 @@ export default function Family() {
   const [permissions, setPermissions] = useState<Permission>(DEFAULT_PERMISSIONS);
 
   const transformFamilyMember = (member: any): FamilyMember => {
-    const permissions = member.permissions as Json;
+    if (!member.permissions || typeof member.permissions !== 'object') {
+      return { ...member, permissions: DEFAULT_PERMISSIONS };
+    }
+
+    const permissionsObj = member.permissions as Record<string, unknown>;
+    
     return {
       ...member,
-      permissions: typeof permissions === 'object' && permissions !== null ? {
-        manage_rewards: !!permissions.manage_rewards,
-        assign_chores: !!permissions.assign_chores,
-        approve_chores: !!permissions.assign_chores,
-        manage_points: !!permissions.manage_points,
-      } : DEFAULT_PERMISSIONS,
+      permissions: {
+        manage_rewards: Boolean(permissionsObj.manage_rewards),
+        assign_chores: Boolean(permissionsObj.assign_chores),
+        approve_chores: Boolean(permissionsObj.approve_chores),
+        manage_points: Boolean(permissionsObj.manage_points),
+      }
     };
   };
 

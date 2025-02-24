@@ -33,20 +33,27 @@ import { Badge } from "@/components/ui/badge";
 import { Chore, FamilyMember, Permission, Json } from "@/types/chores";
 
 const transformFamilyMember = (member: any): FamilyMember => {
-  const permissions = member.permissions as Json;
+  const defaultPermissions: Permission = {
+    manage_rewards: true,
+    assign_chores: true,
+    approve_chores: true,
+    manage_points: true,
+  };
+
+  if (!member.permissions || typeof member.permissions !== 'object') {
+    return { ...member, permissions: defaultPermissions };
+  }
+
+  const permissionsObj = member.permissions as Record<string, unknown>;
+  
   return {
     ...member,
-    permissions: typeof permissions === 'object' && permissions !== null ? {
-      manage_rewards: !!permissions.manage_rewards,
-      assign_chores: !!permissions.assign_chores,
-      approve_chores: !!permissions.approve_chores,
-      manage_points: !!permissions.manage_points,
-    } : {
-      manage_rewards: true,
-      assign_chores: true,
-      approve_chores: true,
-      manage_points: true,
-    },
+    permissions: {
+      manage_rewards: Boolean(permissionsObj.manage_rewards),
+      assign_chores: Boolean(permissionsObj.assign_chores),
+      approve_chores: Boolean(permissionsObj.approve_chores),
+      manage_points: Boolean(permissionsObj.manage_points),
+    }
   };
 };
 
