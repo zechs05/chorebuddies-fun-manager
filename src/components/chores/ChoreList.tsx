@@ -68,13 +68,15 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
     },
   });
 
-  const handleStatusChange = (choreId: string, status: Chore["status"]) => {
+  const handleStatusChange = async (choreId: string, status: Chore["status"]) => {
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
 
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const verificationData = status === 'completed' ? {
       verified_at: new Date().toISOString(),
-      verified_by: supabase.auth.getUser()?.data.user?.id
+      verified_by: user?.id
     } : undefined;
 
     updateChoreMutation.mutate({ choreId, status, verificationData });
@@ -86,7 +88,7 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: Chore['priority']) => {
     switch (priority) {
       case 'high':
         return 'bg-red-100 text-red-700';
@@ -110,8 +112,8 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-medium text-neutral-900">{chore.title}</h3>
-                <Badge className={getPriorityColor(chore.priority || 'medium')}>
-                  {chore.priority || 'medium'}
+                <Badge className={getPriorityColor(chore.priority)}>
+                  {chore.priority}
                 </Badge>
               </div>
               {chore.description && (

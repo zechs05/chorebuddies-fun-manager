@@ -1,3 +1,4 @@
+
 export type FamilyMember = {
   id: string;
   name: string;
@@ -14,6 +15,11 @@ export type Chore = {
   updated_at: string;
   due_date: string | null;
   assigned_to: string | null;
+  priority: 'low' | 'medium' | 'high';
+  verification_required: boolean;
+  verified_at: string | null;
+  verified_by: string | null;
+  auto_approve: boolean;
   family_members?: {
     name: string;
   } | null;
@@ -33,14 +39,3 @@ export type ChoreImage = {
   created_at: string;
 };
 
-export type ChoreVerification = {
-  verified_at: string | null;
-  verified_by: string | null;
-  auto_approve: boolean;
-  verification_required: boolean;
-};
-
-export interface EnhancedChore extends Chore {
-  priority: 'low' | 'medium' | 'high';
-  verification: ChoreVerification;
-}
