@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Success from "@/pages/Success";
+import Dashboard from "@/pages/Dashboard";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
         <Toaster position="top-center" />
       </AuthProvider>
