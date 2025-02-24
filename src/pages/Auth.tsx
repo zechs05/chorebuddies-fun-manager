@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,34 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Handle email confirmation
+  useEffect(() => {
+    const handleEmailConfirmation = async () => {
+      const token_hash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
+      
+      if (token_hash && type === 'email_confirmation') {
+        try {
+          setIsLoading(true);
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash,
+            type: 'email_confirmation',
+          });
+          if (error) throw error;
+          toast.success("Email confirmed successfully!");
+          navigate('/');
+        } catch (error: any) {
+          toast.error(error.message);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    handleEmailConfirmation();
+  }, [searchParams, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,6 +57,7 @@ export default function Auth() {
             data: {
               full_name: fullName,
             },
+            emailRedirectTo: window.location.origin + '/auth',
           },
         });
         if (error) throw error;
@@ -53,7 +82,11 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="glass rounded-2xl p-8">
           <h2 className="text-3xl font-bold font-display text-center mb-8">
-            {isSignUp ? "Create your account" : "Welcome back"}
+            {isLoading && searchParams.get('token_hash') 
+              ? "Confirming your email..."
+              : isSignUp 
+              ? "Create your account" 
+              : "Welcome back"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
