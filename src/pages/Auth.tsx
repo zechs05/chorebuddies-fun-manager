@@ -5,12 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { RoleSelector } from "@/components/auth/RoleSelector";
+import { ChildLoginForm } from "@/components/auth/ChildLoginForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+type LoginRole = "parent" | "child" | null;
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [loginRole, setLoginRole] = useState<LoginRole>(null);
+  const [hasChildAccounts, setHasChildAccounts] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Check for child accounts on component mount
+  useEffect(() => {
+    const checkChildAccounts = async () => {
+      const { count, error } = await supabase
+        .from("child_accounts")
+        .select("*", { count: 'exact', head: true });
+      
+      if (!error && count !== null) {
+        setHasChildAccounts(count > 0);
+      }
+    };
+
+    checkChildAccounts();
+  }, []);
 
   // Handle email confirmation
   useEffect(() => {
@@ -27,7 +49,7 @@ export default function Auth() {
           });
           if (error) throw error;
           toast.success("Email confirmed successfully!");
-          navigate('/dashboard');  // Changed this to redirect to dashboard
+          navigate('/dashboard');
         } catch (error: any) {
           console.error('Verification error:', error);
           toast.error(error.message);
@@ -40,7 +62,7 @@ export default function Auth() {
     handleEmailConfirmation();
   }, [searchParams, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleParentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -75,7 +97,7 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("Signed in successfully!");
-        navigate("/dashboard");  // Changed this to redirect to dashboard
+        navigate("/dashboard");
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -85,18 +107,65 @@ export default function Auth() {
     }
   };
 
+  const handleChildLogin = async (username: string, password: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Call the database function to check child credentials
+      const { data, error } = await supabase.rpc('check_child_credentials', {
+        p_username: username,
+        p_password: password
+      });
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Invalid username or password");
+      }
+
+      // If credentials are valid, redirect to child dashboard
+      toast.success("Welcome back!");
+      navigate("/child-dashboard");
+      
+    } catch (error: any) {
+      console.error('Child login error:', error);
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Show role selector if there are child accounts
+  if (!loginRole && hasChildAccounts) {
+    return <RoleSelector onRoleSelect={setLoginRole} hasChildAccounts={hasChildAccounts} />;
+  }
+
+  // Show child login form if child role is selected
+  if (loginRole === "child") {
+    return <ChildLoginForm onLogin={handleChildLogin} onBack={() => setLoginRole(null)} />;
+  }
+
+  // Parent login/signup form
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="glass rounded-2xl p-8">
-          <h2 className="text-3xl font-bold font-display text-center mb-8">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>
             {isLoading && searchParams.get('token_hash') 
               ? "Confirming your email..."
               : isSignUp 
               ? "Create your account" 
               : "Welcome back"}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          </CardTitle>
+          <CardDescription>
+            {loginRole === "parent" && (
+              <Button variant="ghost" size="sm" onClick={() => setLoginRole(null)}>
+                ← Back to role selection
+              </Button>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleParentSubmit} className="space-y-4">
             {isSignUp && (
               <div>
                 <label htmlFor="fullName" className="block text-sm font-medium mb-1">
@@ -154,8 +223,8 @@ export default function Auth() {
                 : "Don't have an account? Sign up"}
             </button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
