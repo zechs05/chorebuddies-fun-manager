@@ -1,6 +1,5 @@
-
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Users, CheckSquare, Gift, X, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Home, Users, CheckSquare, Gift, X, Settings, LogOut, ChevronDown, BarChart } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
@@ -29,6 +28,7 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     { icon: CheckSquare, label: "Chores", to: "/chores" },
     { icon: Users, label: "Family", to: "/family" },
     { icon: Gift, label: "Rewards", to: "/rewards" },
+    { icon: BarChart, label: "Reports", to: "/reports" },
   ];
 
   const handleLogout = async () => {
