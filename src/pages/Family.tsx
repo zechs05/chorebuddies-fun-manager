@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
 import { FamilyLeaderboard } from "@/components/family/FamilyLeaderboard";
 import { AddFamilyMemberDialog } from "@/components/family/AddFamilyMemberDialog";
-import type { FamilyMember, Permission, LeaderboardEntry } from "@/types/chores";
+import { ChoreSwapRequest } from "@/components/chores/ChoreSwapRequest";
+import { ChoreChat } from "@/components/chores/ChoreChat";
+import type { FamilyMember, Permission, LeaderboardEntry, Chore } from "@/types/chores";
 
 const DEFAULT_PERMISSIONS: Permission = {
   manage_rewards: true,
@@ -23,6 +25,8 @@ export default function Family() {
   const queryClient = useQueryClient();
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
+  const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
 
   const { data: familyMembers, isLoading } = useQuery({
     queryKey: ["familyMembers"],
@@ -50,6 +54,21 @@ export default function Family() {
       const { data, error } = await supabase.rpc('get_leaderboard');
       if (error) throw error;
       return data as LeaderboardEntry[];
+    },
+    enabled: !!user,
+  });
+
+  const { data: assignedChores } = useQuery({
+    queryKey: ["assignedChores"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("chores")
+        .select("*")
+        .eq("user_id", user?.id)
+        .is("status", "pending");
+
+      if (error) throw error;
+      return data as Chore[];
     },
     enabled: !!user,
   });
@@ -139,6 +158,22 @@ export default function Family() {
           editingMember={editingMember}
           defaultPermissions={DEFAULT_PERMISSIONS}
         />
+
+        {selectedChore && (
+          <>
+            <ChoreChat
+              chore={selectedChore}
+              onClose={() => setSelectedChore(null)}
+            />
+            {showSwapDialog && (
+              <ChoreSwapRequest
+                chore={selectedChore}
+                familyMembers={familyMembers || []}
+                onClose={() => setShowSwapDialog(false)}
+              />
+            )}
+          </>
+        )}
 
         {isLoading ? (
           <p>Loading family members...</p>

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +60,30 @@ export function ChoreChat({ chore, onClose }: ChoreChatProps) {
       toast.error(error.message);
     },
   });
+
+  useEffect(() => {
+    if (!chore?.id) return;
+
+    const channel = supabase
+      .channel('chore-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chore_messages',
+          filter: `chore_id=eq.${chore.id}`,
+        },
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: ["choreMessages", chore.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [chore?.id, queryClient]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !chore) return;
