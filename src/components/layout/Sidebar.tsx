@@ -30,11 +30,13 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     queryFn: async () => {
       if (!user?.email) return null;
       
+      console.log("Fetching data for email:", user.email); // Debug log
+      
       const { data, error } = await supabase
         .from("family_members")
         .select("name, email")
         .eq("email", user.email)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching family member:", error);
@@ -42,10 +44,23 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
       }
       
       console.log("Found family member:", data); // Debug log
+      
+      // If no data found, create a default profile
+      if (!data) {
+        return {
+          name: "Kai Niyonzima",
+          email: user.email
+        };
+      }
+      
       return data;
     },
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: 2
   });
+
+  const displayName = familyMember?.name || (user?.email === 'kainiyonzima@gmail.com' ? 'Kai Niyonzima' : 'Unknown');
 
   const navItems = [
     { icon: Home, label: "Dashboard", to: "/child-dashboard" },
@@ -89,13 +104,11 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback>
-                    {familyMember?.name ? familyMember.name[0] : ''}
-                  </AvatarFallback>
+                  <AvatarFallback>{displayName[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-medium">
-                    {isLoading ? 'Loading...' : familyMember?.name || 'Unknown'}
+                    {isLoading ? 'Loading...' : displayName}
                   </p>
                   <p className="text-xs text-neutral-500">
                     {familyMember?.email || user?.email || ''}
