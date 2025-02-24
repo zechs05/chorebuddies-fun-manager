@@ -1,5 +1,5 @@
 
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Settings } from "lucide-react";
 import { Button } from "../ui/button";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,10 +41,18 @@ export const Header = ({ toggleSidebar }: HeaderProps) => {
             Welcome, {user?.email}
           </span>
           <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/settings')}
+            className="ml-4"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+          <Button 
             variant="destructive" 
             size="sm"
             onClick={handleLogout}
-            className="ml-4"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Logout
