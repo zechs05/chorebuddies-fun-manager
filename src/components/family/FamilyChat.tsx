@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { format } from "date-fns";
 import type { FamilyMember } from "@/types/chores";
+import type { Database } from "@/types/supabase";
 
 type FamilyChatProps = {
   isOpen: boolean;
@@ -20,13 +21,7 @@ type FamilyChatProps = {
   member: FamilyMember;
 };
 
-type ChatMessage = {
-  id: string;
-  content: string;
-  sender_id: string;
-  receiver_id: string;
-  created_at: string;
-};
+type ChatMessage = Database['public']['Tables']['family_chat_messages']['Row'];
 
 export function FamilyChat({ isOpen, onClose, member }: FamilyChatProps) {
   const { user } = useAuth();
@@ -35,17 +30,17 @@ export function FamilyChat({ isOpen, onClose, member }: FamilyChatProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !user) return;
 
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from('family_chat_messages')
-        .select('*')
-        .or(`sender_id.eq.${member.id},receiver_id.eq.${member.id}`)
+        .select()
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: true });
 
       if (!error && data) {
-        setMessages(data as ChatMessage[]);
+        setMessages(data);
       }
       setLoading(false);
     };
@@ -61,10 +56,11 @@ export function FamilyChat({ isOpen, onClose, member }: FamilyChatProps) {
           event: 'INSERT',
           schema: 'public',
           table: 'family_chat_messages',
-          filter: `receiver_id=eq.${member.id}`,
+          filter: `receiver_id=eq.${user.id}`,
         },
         (payload) => {
-          setMessages((current) => [...current, payload.new as ChatMessage]);
+          const newMessage = payload.new as ChatMessage;
+          setMessages((current) => [...current, newMessage]);
         }
       )
       .subscribe();
@@ -72,7 +68,7 @@ export function FamilyChat({ isOpen, onClose, member }: FamilyChatProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isOpen, member.id]);
+  }, [isOpen, member.id, user]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;

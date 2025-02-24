@@ -1,12 +1,6 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+import { Database as DatabaseGenerated } from "@/integrations/supabase/types";
 
-export type Database = {
+export interface Database extends DatabaseGenerated {
   public: {
     Tables: {
       achievements: {
@@ -299,30 +293,29 @@ export type Database = {
       }
       family_chat_messages: {
         Row: {
-          content: string
-          created_at: string | null
-          id: string
-          receiver_id: string
-          sender_id: string
-          updated_at: string | null
-        }
+          id: string;
+          content: string;
+          sender_id: string;
+          receiver_id: string;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          receiver_id: string
-          sender_id: string
-          updated_at?: string | null
-        }
+          id?: string;
+          content: string;
+          sender_id: string;
+          receiver_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          receiver_id?: string
-          sender_id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
+          id?: string;
+          content?: string;
+          sender_id?: string;
+          receiver_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
       }
       family_members: {
         Row: {
