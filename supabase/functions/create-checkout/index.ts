@@ -7,11 +7,11 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
 })
 
-// Replace these with your actual Stripe price IDs from your Dashboard
+// Configured with your actual Stripe price IDs
 const PLANS = {
   free: { price: 0 },
-  pro: { price_id: 'price_YOUR_PRO_PRICE_ID' }, // $14.99 CAD plan
-  enterprise: { price_id: 'price_YOUR_ULTIMATE_PRICE_ID' } // $22.99 CAD plan
+  pro: { price_id: 'price_1OvfNCIFx6QJGeKUNJoJj6sD' }, // $14.99 CAD ParentPal Pro
+  enterprise: { price_id: 'price_1OvfLdIFx6QJGeKUkkVgEqLK' } // $22.99 CAD ParentPro Ultimate
 }
 
 const corsHeaders = {
