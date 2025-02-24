@@ -27,21 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { 
-  PlusCircle, 
-  Pencil, 
-  Trash2, 
-  Trophy,
-  MessageSquare,
-  UserPlus,
-  Settings,
-  Star
-} from "lucide-react";
+import { Star } from "lucide-react";
 import { toast } from "sonner";
-import type { FamilyMember, Permission, LeaderboardEntry, Json } from "@/types/chores";
+import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
+import type { FamilyMember, Permission, LeaderboardEntry } from "@/types/chores";
 
 const DEFAULT_PERMISSIONS: Permission = {
   manage_rewards: true,
@@ -58,24 +48,9 @@ export default function Family() {
   const [email, setEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState("child");
   const [permissions, setPermissions] = useState<Permission>(DEFAULT_PERMISSIONS);
-
-  const transformFamilyMember = (member: any): FamilyMember => {
-    if (!member.permissions || typeof member.permissions !== 'object') {
-      return { ...member, permissions: DEFAULT_PERMISSIONS };
-    }
-
-    const permissionsObj = member.permissions as Record<string, unknown>;
-    
-    return {
-      ...member,
-      permissions: {
-        manage_rewards: Boolean(permissionsObj.manage_rewards),
-        assign_chores: Boolean(permissionsObj.assign_chores),
-        approve_chores: Boolean(permissionsObj.approve_chores),
-        manage_points: Boolean(permissionsObj.manage_points),
-      }
-    };
-  };
+  const [age, setAge] = useState<number | undefined>(undefined);
+  const [preferredDifficulty, setPreferredDifficulty] = useState<string>("medium");
+  const [maxWeeklyChores, setMaxWeeklyChores] = useState<number>(10);
 
   const { data: familyMembers, isLoading } = useQuery({
     queryKey: ["familyMembers"],
@@ -89,7 +64,10 @@ export default function Family() {
         .eq("user_id", user?.id);
 
       if (error) throw error;
-      return (data || []).map(transformFamilyMember) as FamilyMember[];
+      return data?.map(member => ({
+        ...member,
+        permissions: member.permissions as Permission || DEFAULT_PERMISSIONS
+      })) as FamilyMember[];
     },
     enabled: !!user,
   });
@@ -105,7 +83,14 @@ export default function Family() {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async (data: { email: string; role: string; permissions: Permission }) => {
+    mutationFn: async (data: { 
+      email: string; 
+      role: string; 
+      permissions: Permission;
+      age?: number;
+      preferred_difficulty?: string;
+      max_weekly_chores?: number;
+    }) => {
       const { data: exists, error: checkError } = await supabase
         .rpc('check_family_member_email', {
           p_email: data.email,
@@ -123,6 +108,10 @@ export default function Family() {
           name: data.email.split('@')[0],
           role: data.role,
           permissions: data.permissions,
+          age: data.age,
+          preferred_difficulty: data.preferred_difficulty,
+          max_weekly_chores: data.max_weekly_chores,
+          status: 'active'
         });
 
       if (error) throw error;
@@ -136,13 +125,30 @@ export default function Family() {
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: async ({ id, email, permissions }: { id: string; email: string; permissions: Permission }) => {
+    mutationFn: async ({ 
+      id, 
+      email, 
+      permissions,
+      age,
+      preferred_difficulty,
+      max_weekly_chores
+    }: { 
+      id: string; 
+      email: string; 
+      permissions: Permission;
+      age?: number;
+      preferred_difficulty?: string;
+      max_weekly_chores?: number;
+    }) => {
       const { error } = await supabase
         .from("family_members")
         .update({
           email: email.toLowerCase(),
           permissions,
           updated_at: new Date().toISOString(),
+          age,
+          preferred_difficulty,
+          max_weekly_chores
         })
         .eq("id", id)
         .eq("user_id", user?.id);
@@ -177,34 +183,36 @@ export default function Family() {
     e.preventDefault();
     if (!email) return;
 
+    const memberData = {
+      email,
+      permissions,
+      age,
+      preferred_difficulty,
+      max_weekly_chores
+    };
+
     if (editingMember) {
       updateMemberMutation.mutate({ 
         id: editingMember.id, 
-        email,
-        permissions 
+        ...memberData
       });
     } else {
       addMemberMutation.mutate({ 
         email,
         role: selectedRole,
-        permissions
+        ...memberData
       });
     }
   };
 
-  const renderAchievements = (member: FamilyMember) => {
-    if (!member.achievements?.length) return null;
-
-    return (
-      <div className="flex gap-2 mt-2">
-        {member.achievements.map((achievement) => (
-          <Badge key={achievement.id} variant="secondary">
-            <Trophy className="w-3 h-3 mr-1" />
-            {achievement.title}
-          </Badge>
-        ))}
-      </div>
-    );
+  const handleEditMember = (member: FamilyMember) => {
+    setEditingMember(member);
+    setEmail(member.email || "");
+    setPermissions(member.permissions || DEFAULT_PERMISSIONS);
+    setAge(member.age);
+    setPreferredDifficulty(member.preferred_difficulty || "medium");
+    setMaxWeeklyChores(member.max_weekly_chores || 10);
+    setIsAddMemberOpen(true);
   };
 
   return (
@@ -215,7 +223,6 @@ export default function Family() {
           <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
             <DialogTrigger asChild>
               <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
                 Add Family Member
               </Button>
             </DialogTrigger>
@@ -252,6 +259,48 @@ export default function Family() {
                     </Select>
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      min={3}
+                      max={19}
+                      value={age || ''}
+                      onChange={(e) => setAge(Number(e.target.value))}
+                      placeholder="Enter age"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="max_weekly_chores">Max Weekly Chores</Label>
+                    <Input
+                      id="max_weekly_chores"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={maxWeeklyChores}
+                      onChange={(e) => setMaxWeeklyChores(Number(e.target.value))}
+                      placeholder="Max Chores"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Preferred Difficulty</Label>
+                  <Select value={preferredDifficulty} onValueChange={setPreferredDifficulty}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="easy">Easy</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {(selectedRole === 'parent' || editingMember?.role === 'parent') && (
                   <div className="space-y-4">
@@ -318,110 +367,50 @@ export default function Family() {
               variant="outline"
               onClick={() => setIsAddMemberOpen(true)}
             >
-              <PlusCircle className="h-4 w-4 mr-2" />
               Add Your First Family Member
             </Button>
           </div>
         ) : (
-          <div className="grid gap-6">
-            
-        {/* Leaderboard Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Family Leaderboard</CardTitle>
-            <CardDescription>See who's leading in points and achievements</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {leaderboard?.map((entry: LeaderboardEntry, index: number) => (
-                <div key={entry.member_id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="font-bold text-lg">{index + 1}</div>
-                    <Avatar>
-                      <AvatarImage src={familyMembers?.find(m => m.id === entry.member_id)?.avatar_url || ''} />
-                      <AvatarFallback>{entry.member_name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{entry.member_name}</p>
-                      <p className="text-sm text-neutral-500">{entry.completed_chores} chores completed</p>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Family Leaderboard</CardTitle>
+                <CardDescription>See who's leading in points and achievements</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {leaderboard?.map((entry: LeaderboardEntry, index: number) => (
+                    <div key={entry.member_id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="font-bold text-lg">{index + 1}</div>
+                        <div>
+                          <p className="font-medium">{entry.member_name}</p>
+                          <p className="text-sm text-neutral-500">{entry.completed_chores} chores completed</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Star className="h-5 w-5 text-yellow-500" />
+                        <span className="font-bold">{entry.total_points} points</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="h-5 w-5 text-yellow-500" />
-                    <span className="font-bold">{entry.total_points} points</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Family Members Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {familyMembers.map((member) => (
-            <Card key={member.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={member.avatar_url || ''} />
-                      <AvatarFallback>{member.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium">{member.name}</h3>
-                      <Badge variant="secondary" className="mt-1">
-                        {member.role}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEmail(member.email || "");
-                        setEditingMember(member);
-                        setPermissions(member.permissions || DEFAULT_PERMISSIONS);
-                        setIsAddMemberOpen(true);
-                      }}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (window.confirm("Are you sure you want to remove this family member?")) {
-                          deleteMemberMutation.mutate(member.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm text-neutral-600">
-                    {member.email}
-                  </p>
-                  <p className="text-sm text-neutral-500 capitalize">
-                    Status: {member.invitation_status || 'pending'}
-                  </p>
-                  {member.streak_days && member.streak_days > 0 && (
-                    <Badge variant="outline" className="mt-2">
-                      🔥 {member.streak_days} day streak
-                    </Badge>
-                  )}
-                  {renderAchievements(member)}
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {familyMembers.map((member) => (
+                <FamilyMemberCard
+                  key={member.id}
+                  member={member}
+                  onEdit={handleEditMember}
+                  onDelete={(id) => deleteMemberMutation.mutate(id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    )}
-  </div>
-</DashboardLayout>
-);
+    </DashboardLayout>
+  );
 }

@@ -13,10 +13,19 @@ export type Permission = {
   manage_points: boolean;
 };
 
+export type ChoreCategory = {
+  id: string;
+  name: string;
+  description?: string;
+  user_id: string;
+};
+
 export type FamilyMember = {
   id: string;
   name: string;
   role: string;
+  status?: 'active' | 'inactive' | 'needs_approval';
+  age?: number;
   points_balance?: number;
   avatar_url?: string | null;
   email?: string;
@@ -24,6 +33,9 @@ export type FamilyMember = {
   permissions?: Permission;
   achievements?: Achievement[];
   streak_days?: number;
+  max_weekly_chores?: number;
+  preferred_categories?: string[];
+  preferred_difficulty?: 'easy' | 'medium' | 'hard';
 };
 
 export type ChoreImage = {
