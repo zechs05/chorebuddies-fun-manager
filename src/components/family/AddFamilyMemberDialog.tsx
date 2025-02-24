@@ -14,6 +14,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import type { FamilyMember, Permission } from "@/types/chores";
 
+type Difficulty = 'easy' | 'medium' | 'hard';
+
 type AddFamilyMemberDialogProps = {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,7 +42,9 @@ export function AddFamilyMemberDialog({
   const [selectedRole, setSelectedRole] = useState(editingMember?.role || "child");
   const [permissions, setPermissions] = useState<Permission>(editingMember?.permissions || defaultPermissions);
   const [age, setAge] = useState<number | undefined>(editingMember?.age);
-  const [preferredDifficulty, setPreferredDifficulty] = useState(editingMember?.preferred_difficulty || "medium");
+  const [preferredDifficulty, setPreferredDifficulty] = useState<Difficulty>(
+    (editingMember?.preferred_difficulty as Difficulty) || "medium"
+  );
   const [maxWeeklyChores, setMaxWeeklyChores] = useState(editingMember?.max_weekly_chores || 10);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -121,7 +125,10 @@ export function AddFamilyMemberDialog({
 
           <div className="space-y-2">
             <Label>Preferred Difficulty</Label>
-            <Select value={preferredDifficulty} onValueChange={setPreferredDifficulty}>
+            <Select
+              value={preferredDifficulty}
+              onValueChange={(value: Difficulty) => setPreferredDifficulty(value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select difficulty" />
               </SelectTrigger>
