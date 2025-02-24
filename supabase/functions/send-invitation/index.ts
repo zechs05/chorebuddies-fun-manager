@@ -18,11 +18,20 @@ serve(async (req) => {
   try {
     const { email, fullName, invitedByName } = await req.json();
     
-    console.log(`Sending invitation email to ${email}`);
+    console.log("Received request to send invitation:", {
+      email,
+      fullName,
+      invitedByName,
+      resendApiKey: !!Deno.env.get("RESEND_API_KEY"), // Log if we have the API key (true/false)
+    });
+
+    if (!Deno.env.get("RESEND_API_KEY")) {
+      throw new Error("RESEND_API_KEY is not set");
+    }
 
     const { data, error } = await resend.emails.send({
       from: "ChoreQuest <onboarding@resend.dev>",
-      to: email,
+      to: [email], // Make sure email is in an array
       subject: "You've been invited to join ChoreQuest!",
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -50,14 +59,17 @@ serve(async (req) => {
 
     console.log("Email sent successfully:", data);
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error in send-invitation function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
