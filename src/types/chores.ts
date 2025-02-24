@@ -1,11 +1,26 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Permission = {
+  manage_rewards: boolean;
+  assign_chores: boolean;
+  approve_chores: boolean;
+  manage_points: boolean;
+};
+
 export type FamilyMember = {
   id: string;
   name: string;
   role: string;
   points_balance?: number;
   avatar_url?: string | null;
-  email?: string; // Added to match database schema
-  invitation_status?: string; // Added to match database schema
+  email?: string;
+  invitation_status?: string;
   permissions?: Permission;
   achievements?: Achievement[];
   streak_days?: number;
@@ -124,13 +139,6 @@ export type NotificationPreference = {
   challenge_notifications: boolean;
   email_notifications: boolean;
   push_notifications: boolean;
-};
-
-export type Permission = {
-  manage_rewards: boolean;
-  assign_chores: boolean;
-  approve_chores: boolean;
-  manage_points: boolean;
 };
 
 export type ChoreSwap = {

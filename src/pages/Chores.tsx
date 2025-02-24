@@ -30,7 +30,25 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Chore } from "@/types/chores";
+import { Chore, FamilyMember, Permission, Json } from "@/types/chores";
+
+const transformFamilyMember = (member: any): FamilyMember => {
+  const permissions = member.permissions as Json;
+  return {
+    ...member,
+    permissions: typeof permissions === 'object' && permissions !== null ? {
+      manage_rewards: !!permissions.manage_rewards,
+      assign_chores: !!permissions.assign_chores,
+      approve_chores: !!permissions.approve_chores,
+      manage_points: !!permissions.manage_points,
+    } : {
+      manage_rewards: true,
+      assign_chores: true,
+      approve_chores: true,
+      manage_points: true,
+    },
+  };
+};
 
 export default function Chores() {
   const { user } = useAuth();
@@ -88,7 +106,7 @@ export default function Chores() {
         .eq("user_id", user?.id);
 
       if (error) throw error;
-      return data;
+      return (data || []).map(transformFamilyMember) as FamilyMember[];
     },
     enabled: !!user,
   });

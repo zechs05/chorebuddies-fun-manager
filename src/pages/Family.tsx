@@ -41,7 +41,14 @@ import {
   Star
 } from "lucide-react";
 import { toast } from "sonner";
-import type { FamilyMember, Permission, LeaderboardEntry } from "@/types/chores";
+import type { FamilyMember, Permission, LeaderboardEntry, Json } from "@/types/chores";
+
+const DEFAULT_PERMISSIONS: Permission = {
+  manage_rewards: true,
+  assign_chores: true,
+  approve_chores: true,
+  manage_points: true,
+};
 
 export default function Family() {
   const { user } = useAuth();
@@ -50,12 +57,20 @@ export default function Family() {
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [email, setEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState("child");
-  const [permissions, setPermissions] = useState<Permission>({
-    manage_rewards: true,
-    assign_chores: true,
-    approve_chores: true,
-    manage_points: true,
-  });
+  const [permissions, setPermissions] = useState<Permission>(DEFAULT_PERMISSIONS);
+
+  const transformFamilyMember = (member: any): FamilyMember => {
+    const permissions = member.permissions as Json;
+    return {
+      ...member,
+      permissions: typeof permissions === 'object' && permissions !== null ? {
+        manage_rewards: !!permissions.manage_rewards,
+        assign_chores: !!permissions.assign_chores,
+        approve_chores: !!permissions.assign_chores,
+        manage_points: !!permissions.manage_points,
+      } : DEFAULT_PERMISSIONS,
+    };
+  };
 
   const { data: familyMembers, isLoading } = useQuery({
     queryKey: ["familyMembers"],
@@ -69,7 +84,7 @@ export default function Family() {
         .eq("user_id", user?.id);
 
       if (error) throw error;
-      return data as FamilyMember[];
+      return (data || []).map(transformFamilyMember) as FamilyMember[];
     },
     enabled: !!user,
   });
@@ -361,7 +376,7 @@ export default function Family() {
                       onClick={() => {
                         setEmail(member.email || "");
                         setEditingMember(member);
-                        setPermissions(member.permissions || permissions);
+                        setPermissions(member.permissions || DEFAULT_PERMISSIONS);
                         setIsAddMemberOpen(true);
                       }}
                     >
