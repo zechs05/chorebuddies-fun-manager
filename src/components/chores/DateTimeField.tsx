@@ -1,6 +1,6 @@
 
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useState } from "react";
 
 interface DateTimeFieldProps {
   date: Date | null;
@@ -19,12 +20,26 @@ interface DateTimeFieldProps {
 }
 
 export function DateTimeField({ date, time, onDateChange, onTimeChange }: DateTimeFieldProps) {
+  const [tempDate, setTempDate] = useState<Date | null>(date);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleConfirm = () => {
+    if (tempDate) {
+      const newDate = new Date(tempDate);
+      newDate.setHours(12, 0, 0, 0);
+      onDateChange(newDate);
+    } else {
+      onDateChange(null);
+    }
+    setIsOpen(false);
+  };
+
   return (
     <div className="space-y-2">
       <Label>Due Date & Time</Label>
       <div className="flex gap-2">
         <div className="flex-1">
-          <Popover>
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -42,19 +57,8 @@ export function DateTimeField({ date, time, onDateChange, onTimeChange }: DateTi
             <PopoverContent className="w-auto p-0" align="start" side="bottom">
               <Calendar
                 mode="single"
-                selected={date}
-                onSelect={(date) => {
-                  console.log("Selected date:", date);
-                  if (date) {
-                    // Ensure we're working with a new Date object
-                    const newDate = new Date(date);
-                    // Set the time to noon to avoid timezone issues
-                    newDate.setHours(12, 0, 0, 0);
-                    onDateChange(newDate);
-                  } else {
-                    onDateChange(null);
-                  }
-                }}
+                selected={tempDate}
+                onSelect={setTempDate}
                 disabled={(date) => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
@@ -62,6 +66,26 @@ export function DateTimeField({ date, time, onDateChange, onTimeChange }: DateTi
                 }}
                 initialFocus
               />
+              <div className="flex justify-end gap-2 p-3 border-t border-border">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setTempDate(date);
+                    setIsOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleConfirm}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Confirm
+                </Button>
+              </div>
             </PopoverContent>
           </Popover>
         </div>
