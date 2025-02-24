@@ -328,8 +328,10 @@ export type Database = {
         Row: {
           age: number | null
           avatar_url: string | null
+          child_auth_enabled: boolean | null
           created_at: string | null
           email: string | null
+          email_verified: boolean | null
           id: string
           invitation_status: string | null
           invited_at: string | null
@@ -345,8 +347,10 @@ export type Database = {
         Insert: {
           age?: number | null
           avatar_url?: string | null
+          child_auth_enabled?: boolean | null
           created_at?: string | null
           email?: string | null
+          email_verified?: boolean | null
           id?: string
           invitation_status?: string | null
           invited_at?: string | null
@@ -362,8 +366,10 @@ export type Database = {
         Update: {
           age?: number | null
           avatar_url?: string | null
+          child_auth_enabled?: boolean | null
           created_at?: string | null
           email?: string | null
+          email_verified?: boolean | null
           id?: string
           invitation_status?: string | null
           invited_at?: string | null
@@ -584,6 +590,12 @@ export type Database = {
       get_leaderboard: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      is_child_email_preapproved: {
+        Args: {
+          p_email: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

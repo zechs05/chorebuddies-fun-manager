@@ -14,6 +14,7 @@ type AddMemberData = {
   fullName?: string;
   avatarUrl?: string;
   status?: string;
+  childAuthEnabled?: boolean;
 };
 
 export function useFamilyMutations(userId?: string) {
@@ -45,7 +46,9 @@ export function useFamilyMutations(userId?: string) {
           age: data.age,
           status: data.status || 'active',
           invitation_status: 'pending',
-          invited_at: new Date().toISOString()
+          invited_at: new Date().toISOString(),
+          email_verified: true, // Auto-verify emails for now since we're using a test email
+          child_auth_enabled: data.role === 'child' // Enable child auth automatically for child profiles
         });
 
       if (error) {

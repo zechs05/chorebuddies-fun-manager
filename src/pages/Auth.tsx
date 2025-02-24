@@ -21,7 +21,7 @@ export default function Auth() {
   // Handle role selection - Directly navigate to child dashboard for child role
   const handleRoleSelect = (role: LoginRole) => {
     if (role === "child") {
-      navigate("/child-dashboard");
+      setLoginRole(role);
     } else {
       setLoginRole(role);
     }
@@ -100,6 +100,47 @@ export default function Auth() {
     }
   };
 
+  const handleChildSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      // First check if this email is pre-approved for child registration
+      const { data: isApproved } = await supabase.rpc('is_child_email_preapproved', {
+        p_email: email
+      });
+
+      if (!isApproved) {
+        throw new Error("This email is not approved for child registration. Please ask your parent to add you to the family first.");
+      }
+
+      // Sign up without email verification
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: 'child'
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Registration successful! Redirecting to your dashboard...");
+      navigate("/child-dashboard");
+    } catch (error: any) {
+      console.error('Child registration error:', error);
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Show role selector first
   if (!loginRole) {
     return (
@@ -109,7 +150,6 @@ export default function Auth() {
     );
   }
 
-  // Parent login/signup form
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
@@ -117,6 +157,8 @@ export default function Auth() {
           <CardTitle>
             {isLoading && searchParams.get('token_hash') 
               ? "Confirming your email..."
+              : loginRole === 'child'
+              ? "Child Login"
               : isSignUp 
               ? "Create your account" 
               : "Welcome back"}
@@ -130,8 +172,8 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleParentSubmit} className="space-y-4">
-            {isSignUp && (
+          <form onSubmit={loginRole === 'child' ? handleChildSubmit : handleParentSubmit} className="space-y-4">
+            {isSignUp && loginRole === 'parent' && (
               <div>
                 <label htmlFor="fullName" className="block text-sm font-medium mb-1">
                   Full Name
@@ -172,22 +214,26 @@ export default function Auth() {
             <Button type="submit" className="w-full button-gradient" disabled={isLoading}>
               {isLoading
                 ? "Loading..."
+                : loginRole === 'child'
+                ? "Sign in as Child"
                 : isSignUp
                 ? "Create account"
                 : "Sign in"}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-neutral-600 hover:text-primary"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
-            </button>
-          </div>
+          {loginRole === 'parent' && (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-neutral-600 hover:text-primary"
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Sign up"}
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
