@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -42,7 +41,7 @@ import {
   Star
 } from "lucide-react";
 import { toast } from "sonner";
-import type { FamilyMember, Permission } from "@/types/chores";
+import type { FamilyMember, Permission, LeaderboardEntry } from "@/types/chores";
 
 export default function Family() {
   const { user } = useAuth();
@@ -80,7 +79,7 @@ export default function Family() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_leaderboard');
       if (error) throw error;
-      return data;
+      return data as LeaderboardEntry[];
     },
     enabled: !!user,
   });
@@ -305,103 +304,104 @@ export default function Family() {
           </div>
         ) : (
           <div className="grid gap-6">
-            {/* Leaderboard Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Family Leaderboard</CardTitle>
-                <CardDescription>See who's leading in points and achievements</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {leaderboard?.map((entry: any, index: number) => (
-                    <div key={entry.member_id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="font-bold text-lg">{index + 1}</div>
-                        <Avatar>
-                          <AvatarImage src={familyMembers.find(m => m.id === entry.member_id)?.avatar_url || ''} />
-                          <AvatarFallback>{entry.member_name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{entry.member_name}</p>
-                          <p className="text-sm text-neutral-500">{entry.completed_chores} chores completed</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Star className="h-5 w-5 text-yellow-500" />
-                        <span className="font-bold">{entry.total_points} points</span>
-                      </div>
+            
+        {/* Leaderboard Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Family Leaderboard</CardTitle>
+            <CardDescription>See who's leading in points and achievements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {leaderboard?.map((entry: LeaderboardEntry, index: number) => (
+                <div key={entry.member_id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="font-bold text-lg">{index + 1}</div>
+                    <Avatar>
+                      <AvatarImage src={familyMembers?.find(m => m.id === entry.member_id)?.avatar_url || ''} />
+                      <AvatarFallback>{entry.member_name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{entry.member_name}</p>
+                      <p className="text-sm text-neutral-500">{entry.completed_chores} chores completed</p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    <span className="font-bold">{entry.total_points} points</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Family Members Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {familyMembers.map((member) => (
+            <Card key={member.id}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={member.avatar_url || ''} />
+                      <AvatarFallback>{member.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">{member.name}</h3>
+                      <Badge variant="secondary" className="mt-1">
+                        {member.role}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEmail(member.email || "");
+                        setEditingMember(member);
+                        setPermissions(member.permissions || permissions);
+                        setIsAddMemberOpen(true);
+                      }}
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to remove this family member?")) {
+                          deleteMemberMutation.mutate(member.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-neutral-600">
+                    {member.email}
+                  </p>
+                  <p className="text-sm text-neutral-500 capitalize">
+                    Status: {member.invitation_status || 'pending'}
+                  </p>
+                  {member.streak_days && member.streak_days > 0 && (
+                    <Badge variant="outline" className="mt-2">
+                      🔥 {member.streak_days} day streak
+                    </Badge>
+                  )}
+                  {renderAchievements(member)}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Family Members Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {familyMembers.map((member) => (
-                <Card key={member.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={member.avatar_url || ''} />
-                          <AvatarFallback>{member.name[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-medium">{member.name}</h3>
-                          <Badge variant="secondary" className="mt-1">
-                            {member.role}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEmail(member.email || "");
-                            setEditingMember(member);
-                            setPermissions(member.permissions || permissions);
-                            setIsAddMemberOpen(true);
-                          }}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to remove this family member?")) {
-                              deleteMemberMutation.mutate(member.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm text-neutral-600">
-                        {member.email}
-                      </p>
-                      <p className="text-sm text-neutral-500 capitalize">
-                        Status: {member.invitation_status || 'pending'}
-                      </p>
-                      {member.streak_days && member.streak_days > 0 && (
-                        <Badge variant="outline" className="mt-2">
-                          🔥 {member.streak_days} day streak
-                        </Badge>
-                      )}
-                      {renderAchievements(member)}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
-    </DashboardLayout>
-  );
+    )}
+  </div>
+</DashboardLayout>
+);
 }

@@ -147,19 +147,80 @@ export type Database = {
           },
         ]
       }
+      chore_swaps: {
+        Row: {
+          chore_id: string | null
+          created_at: string | null
+          id: string
+          requested_id: string | null
+          requester_id: string | null
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          requested_id?: string | null
+          requester_id?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          requested_id?: string | null
+          requester_id?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chore_swaps_chore_id_fkey"
+            columns: ["chore_id"]
+            isOneToOne: false
+            referencedRelation: "chores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chore_swaps_requested_id_fkey"
+            columns: ["requested_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chore_swaps_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chores: {
         Row: {
           assigned_to: string | null
           auto_approve: boolean | null
+          behavior_note: string | null
+          behavior_points: number | null
+          completion_window: Json | null
           created_at: string | null
           description: string | null
+          difficulty_level: string | null
           due_date: string | null
           id: string
+          parent_notes: string[] | null
           points: number | null
           priority: string | null
           recurring: string | null
           reminders_enabled: boolean | null
+          rotation_schedule: Json | null
           status: Database["public"]["Enums"]["chore_status"] | null
+          streak_count: number | null
+          swap_request_id: string | null
+          team_members: string[] | null
           title: string
           type: string | null
           updated_at: string | null
@@ -171,15 +232,24 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           auto_approve?: boolean | null
+          behavior_note?: string | null
+          behavior_points?: number | null
+          completion_window?: Json | null
           created_at?: string | null
           description?: string | null
+          difficulty_level?: string | null
           due_date?: string | null
           id?: string
+          parent_notes?: string[] | null
           points?: number | null
           priority?: string | null
           recurring?: string | null
           reminders_enabled?: boolean | null
+          rotation_schedule?: Json | null
           status?: Database["public"]["Enums"]["chore_status"] | null
+          streak_count?: number | null
+          swap_request_id?: string | null
+          team_members?: string[] | null
           title: string
           type?: string | null
           updated_at?: string | null
@@ -191,15 +261,24 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           auto_approve?: boolean | null
+          behavior_note?: string | null
+          behavior_points?: number | null
+          completion_window?: Json | null
           created_at?: string | null
           description?: string | null
+          difficulty_level?: string | null
           due_date?: string | null
           id?: string
+          parent_notes?: string[] | null
           points?: number | null
           priority?: string | null
           recurring?: string | null
           reminders_enabled?: boolean | null
+          rotation_schedule?: Json | null
           status?: Database["public"]["Enums"]["chore_status"] | null
+          streak_count?: number | null
+          swap_request_id?: string | null
+          team_members?: string[] | null
           title?: string
           type?: string | null
           updated_at?: string | null
@@ -227,6 +306,7 @@ export type Database = {
           invitation_status: string | null
           invited_at: string | null
           name: string
+          permissions: Json | null
           role: string | null
           updated_at: string | null
           user_id: string
@@ -239,6 +319,7 @@ export type Database = {
           invitation_status?: string | null
           invited_at?: string | null
           name: string
+          permissions?: Json | null
           role?: string | null
           updated_at?: string | null
           user_id: string
@@ -251,6 +332,7 @@ export type Database = {
           invitation_status?: string | null
           invited_at?: string | null
           name?: string
+          permissions?: Json | null
           role?: string | null
           updated_at?: string | null
           user_id?: string
