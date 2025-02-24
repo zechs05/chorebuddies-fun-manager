@@ -176,6 +176,7 @@ export default function Chores() {
       totalPoints,
       badges: [
         { name: "Quick Finisher", earned: completedChores.some(chore => {
+          if (!chore.created_at || !chore.updated_at) return false;
           const completionTime = new Date(chore.updated_at).getTime() - new Date(chore.created_at).getTime();
           return completionTime < 3600000; // 1 hour
         })},
@@ -335,7 +336,7 @@ export default function Chores() {
                       <div>
                         <p className="font-medium">{chore.title}</p>
                         <p className="text-sm text-neutral-500">
-                          By {chore.family_members?.name}
+                          By {chore.family_members?.name || 'Unassigned'}
                         </p>
                       </div>
                       <Button variant="outline" size="sm">

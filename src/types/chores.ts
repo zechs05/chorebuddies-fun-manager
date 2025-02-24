@@ -12,8 +12,12 @@ export type Chore = {
   points: number | null;
   status: "pending" | "in_progress" | "completed";
   created_at: string;
+  updated_at: string;
   due_date: string | null;
   assigned_to: string | null;
+  family_members?: {
+    name: string;
+  } | null;
 };
 
 export type ChoreMessage = {
