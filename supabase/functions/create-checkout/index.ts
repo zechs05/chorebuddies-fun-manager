@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import Stripe from 'https://esm.sh/stripe@13.6.0'
@@ -10,8 +11,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 // Configured with your actual Stripe price IDs
 const PLANS = {
   free: { price: 0 },
-  pro: { price_id: 'price_1OvfNCIFx6QJGeKUNJoJj6sD' }, // $14.99 CAD ParentPal Pro
-  enterprise: { price_id: 'price_1OvfLdIFx6QJGeKUkkVgEqLK' } // $22.99 CAD ParentPro Ultimate
+  pro: { price_id: 'price_1QvXoeCkL5ed5EgTpd1uTwAq' }, // $14.99 CAD ParentPal Pro
+  enterprise: { price_id: 'price_YOUR_ULTIMATE_PRICE_ID' } // $22.99 CAD ParentPro Ultimate - need this ID
 }
 
 const corsHeaders = {
