@@ -163,11 +163,25 @@ export type ChoreSwap = {
   resolved_at?: string;
 };
 
+export type AchievementCategory = 
+  | 'daily'
+  | 'weekly'
+  | 'milestone'
+  | 'special'
+  | 'bonus'
+  | 'custom';
+
 export type Achievement = {
   id: string;
   title: string;
   description: string | null;
-  badge_type: string;
+  badge_type: AchievementCategory;
   created_at: string;
   family_member_id: string;
+  progress?: number;
+  total_required?: number;
+  is_secret?: boolean;
+  parent_created?: boolean;
+  points_reward?: number;
+  icon?: string;
 };
