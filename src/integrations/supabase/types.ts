@@ -9,6 +9,79 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chore_images: {
+        Row: {
+          chore_id: string | null
+          created_at: string | null
+          id: string
+          image_url: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chore_images_chore_id_fkey"
+            columns: ["chore_id"]
+            isOneToOne: false
+            referencedRelation: "chores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chore_messages: {
+        Row: {
+          chore_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chore_messages_chore_id_fkey"
+            columns: ["chore_id"]
+            isOneToOne: false
+            referencedRelation: "chores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chores: {
         Row: {
           assigned_to: string | null
@@ -85,6 +158,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      points_history: {
+        Row: {
+          chore_id: string | null
+          created_at: string | null
+          id: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          points: number
+          user_id: string
+        }
+        Update: {
+          chore_id?: string | null
+          created_at?: string | null
+          id?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_history_chore_id_fkey"
+            columns: ["chore_id"]
+            isOneToOne: false
+            referencedRelation: "chores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
