@@ -26,6 +26,7 @@ type AddFamilyMemberDialogProps = {
     age?: number;
     preferredDifficulty?: string;
     maxWeeklyChores?: number;
+    fullName?: string;
   }) => void;
   editingMember: FamilyMember | null;
   defaultPermissions: Permission;
@@ -39,6 +40,7 @@ export function AddFamilyMemberDialog({
   defaultPermissions,
 }: AddFamilyMemberDialogProps) {
   const [email, setEmail] = useState(editingMember?.email || "");
+  const [fullName, setFullName] = useState(editingMember?.name || "");
   const [selectedRole, setSelectedRole] = useState(editingMember?.role || "child");
   const [permissions, setPermissions] = useState<Permission>(editingMember?.permissions || defaultPermissions);
   const [age, setAge] = useState<number | undefined>(editingMember?.age);
@@ -51,6 +53,7 @@ export function AddFamilyMemberDialog({
     e.preventDefault();
     onSubmit({
       email,
+      fullName,
       role: selectedRole,
       permissions,
       age,
@@ -77,6 +80,17 @@ export function AddFamilyMemberDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter email address"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter full name"
             />
           </div>
 

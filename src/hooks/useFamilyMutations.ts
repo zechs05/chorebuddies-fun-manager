@@ -11,6 +11,7 @@ type AddMemberData = {
   age?: number;
   preferredDifficulty?: string;
   maxWeeklyChores?: number;
+  fullName?: string;
 };
 
 export function useFamilyMutations(userId?: string) {
@@ -32,7 +33,7 @@ export function useFamilyMutations(userId?: string) {
         .insert({
           email: data.email.toLowerCase(),
           user_id: userId,
-          name: data.email.split('@')[0],
+          name: data.fullName || data.email.split('@')[0],
           role: data.role,
           permissions: data.permissions,
           age: data.age,
