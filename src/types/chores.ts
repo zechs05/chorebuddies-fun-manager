@@ -6,6 +6,9 @@ export type FamilyMember = {
   avatar_url?: string | null;
   email?: string; // Added to match database schema
   invitation_status?: string; // Added to match database schema
+  permissions?: Permission;
+  achievements?: Achievement[];
+  streak_days?: number;
 };
 
 export type ChoreImage = {
@@ -76,6 +79,15 @@ export type Chore = {
   images?: ChoreImage[];
   messages?: ChoreMessage[];
   reminders?: ChoreReminder[];
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  team_members: string[];
+  rotation_schedule?: any;
+  completion_window?: any;
+  streak_count: number;
+  behavior_note?: string;
+  behavior_points: number;
+  swap_request_id?: string;
+  parent_notes?: string[];
 };
 
 export type LeaderboardEntry = {
@@ -112,4 +124,30 @@ export type NotificationPreference = {
   challenge_notifications: boolean;
   email_notifications: boolean;
   push_notifications: boolean;
+};
+
+export type Permission = {
+  manage_rewards: boolean;
+  assign_chores: boolean;
+  approve_chores: boolean;
+  manage_points: boolean;
+};
+
+export type ChoreSwap = {
+  id: string;
+  requester_id: string;
+  requested_id: string;
+  chore_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  resolved_at?: string;
+};
+
+export type Achievement = {
+  id: string;
+  title: string;
+  description: string | null;
+  badge_type: string;
+  created_at: string;
+  family_member_id: string;
 };
