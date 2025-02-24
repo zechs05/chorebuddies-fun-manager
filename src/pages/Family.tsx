@@ -23,7 +23,7 @@ export default function Family() {
   const queryClient = useQueryClient();
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
-  const [newMember, setNewMember] = useState({ name: "", role: "child" });
+  const [email, setEmail] = useState("");
 
   const { data: familyMembers, isLoading } = useQuery({
     queryKey: ["familyMembers"],
@@ -40,13 +40,24 @@ export default function Family() {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async (memberData: typeof newMember) => {
+    mutationFn: async (email: string) => {
+      // First check if email is already used
+      const { data: exists, error: checkError } = await supabase
+        .rpc('check_family_member_email', {
+          p_email: email,
+          p_user_id: user?.id
+        });
+
+      if (checkError) throw checkError;
+      if (exists) throw new Error("This email is already registered in your family");
+
       const { data, error } = await supabase
         .from("family_members")
         .insert({
-          name: memberData.name.trim(),
-          role: memberData.role,
+          email: email.toLowerCase(),
           user_id: user?.id,
+          name: email.split('@')[0], // Use email username as temporary name
+          role: "pending",
         })
         .select();
 
@@ -55,21 +66,21 @@ export default function Family() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
-      toast.success("Family member added successfully!");
-      setNewMember({ name: "", role: "child" });
+      toast.success("Family member invited successfully!");
+      setEmail("");
       setIsAddMemberOpen(false);
     },
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: async (member: FamilyMember) => {
+    mutationFn: async ({ id, email }: { id: string; email: string }) => {
       const { error } = await supabase
         .from("family_members")
         .update({
-          name: member.name,
-          role: member.role,
+          email: email.toLowerCase(),
+          updated_at: new Date().toISOString(),
         })
-        .eq("id", member.id)
+        .eq("id", id)
         .eq("user_id", user?.id);
 
       if (error) throw error;
@@ -78,6 +89,7 @@ export default function Family() {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
       toast.success("Family member updated successfully!");
       setEditingMember(null);
+      setIsAddMemberOpen(false);
     },
   });
 
@@ -99,16 +111,12 @@ export default function Family() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMember.name.trim()) return;
+    if (!email) return;
 
     if (editingMember) {
-      updateMemberMutation.mutate({
-        ...editingMember,
-        name: newMember.name,
-        role: newMember.role,
-      });
+      updateMemberMutation.mutate({ id: editingMember.id, email });
     } else {
-      addMemberMutation.mutate(newMember);
+      addMemberMutation.mutate(email);
     }
   };
 
@@ -126,33 +134,24 @@ export default function Family() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Family Member</DialogTitle>
+                <DialogTitle>
+                  {editingMember ? "Edit Family Member" : "Add Family Member"}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="name"
-                    value={newMember.name}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter name"
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <select
-                    id="role"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    value={newMember.role}
-                    onChange={(e) => setNewMember(prev => ({ ...prev, role: e.target.value }))}
-                  >
-                    <option value="child">Child</option>
-                    <option value="parent">Parent</option>
-                    <option value="guardian">Guardian</option>
-                  </select>
-                </div>
                 <Button type="submit" className="w-full">
-                  {editingMember ? "Update" : "Add"} Family Member
+                  {editingMember ? "Update" : "Send Invitation"}
                 </Button>
               </form>
             </DialogContent>
@@ -186,10 +185,7 @@ export default function Family() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setNewMember({
-                          name: member.name,
-                          role: member.role || "child",
-                        });
+                        setEmail(member.email || "");
                         setEditingMember(member);
                         setIsAddMemberOpen(true);
                       }}
@@ -209,8 +205,11 @@ export default function Family() {
                     </Button>
                   </div>
                 </div>
-                <p className="text-sm text-neutral-600 capitalize">
-                  Role: {member.role || "Child"}
+                <p className="text-sm text-neutral-600">
+                  {member.email}
+                </p>
+                <p className="text-sm text-neutral-500 capitalize mt-1">
+                  Status: {member.invitation_status || 'pending'}
                 </p>
               </div>
             ))}

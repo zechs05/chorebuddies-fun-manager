@@ -222,7 +222,10 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          email: string | null
           id: string
+          invitation_status: string | null
+          invited_at: string | null
           name: string
           role: string | null
           updated_at: string | null
@@ -231,7 +234,10 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
           name: string
           role?: string | null
           updated_at?: string | null
@@ -240,7 +246,10 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          invitation_status?: string | null
+          invited_at?: string | null
           name?: string
           role?: string | null
           updated_at?: string | null
@@ -436,6 +445,13 @@ export type Database = {
           parent_id: string
           username: string
         }[]
+      }
+      check_family_member_email: {
+        Args: {
+          p_email: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       get_chore_stats: {
         Args: Record<PropertyKey, never>
