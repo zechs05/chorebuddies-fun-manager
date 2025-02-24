@@ -1,4 +1,5 @@
 
+import React, { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -93,6 +94,8 @@ export default function ChildDashboard() {
     reminders_enabled: chore.reminders_enabled || false,
     recurring: (chore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
     status: chore.status || 'pending',
+    difficulty_level: (chore.difficulty_level as 'easy' | 'medium' | 'hard') || 'medium',
+    team_members: chore.team_members || [],
     images: [],
     messages: [],
     reminders: []
