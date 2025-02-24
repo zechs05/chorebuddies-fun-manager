@@ -15,6 +15,15 @@ import { Gift, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export function RewardsTab() {
+  const { data: userData } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      return user;
+    },
+  });
+
   const { data: rewards } = useQuery({
     queryKey: ["available-rewards"],
     queryFn: async () => {
@@ -28,14 +37,33 @@ export function RewardsTab() {
     },
   });
 
-  const handleRedeemReward = async (rewardId: string) => {
+  const handleRedeemReward = async (rewardId: string, pointsCost: number) => {
+    if (!userData?.id) {
+      toast.error("You must be logged in to redeem rewards");
+      return;
+    }
+
     try {
+      const { data: familyMember } = await supabase
+        .from("family_members")
+        .select("id")
+        .eq("user_id", userData.id)
+        .single();
+
+      if (!familyMember) {
+        toast.error("Family member not found");
+        return;
+      }
+
       const { error } = await supabase
         .from("reward_redemptions")
         .insert([
           {
             reward_id: rewardId,
-            status: "pending",
+            child_id: familyMember.id,
+            user_id: userData.id,
+            points_spent: pointsCost,
+            status: "pending"
           },
         ]);
 
@@ -67,7 +95,7 @@ export function RewardsTab() {
                   key={reward.id}
                   className="w-full justify-between"
                   variant="outline"
-                  onClick={() => handleRedeemReward(reward.id)}
+                  onClick={() => handleRedeemReward(reward.id, reward.points_cost)}
                 >
                   <span>{reward.title}</span>
                   <Badge>{reward.points_cost} points</Badge>
