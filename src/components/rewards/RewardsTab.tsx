@@ -29,6 +29,31 @@ interface RewardCategory {
   icon: React.ReactNode;
 }
 
+interface FamilyMember {
+  id: string;
+  total_points: number;
+}
+
+interface Reward {
+  id: string;
+  title: string;
+  description: string | null;
+  points_cost: number;
+  type: string;
+}
+
+interface RewardRedemption {
+  id: string;
+  created_at: string;
+  status: string;
+  points_spent: number;
+  rewards: {
+    title: string;
+    points_cost: number;
+    type: string;
+  };
+}
+
 const rewardCategories: RewardCategory[] = [
   { id: 'screen_time', title: 'Screen Time', icon: <MonitorPlay className="h-5 w-5" /> },
   { id: 'activity', title: 'Activities', icon: <PartyPopper className="h-5 w-5" /> },
@@ -47,23 +72,39 @@ export function RewardsTab() {
     },
   });
 
-  const { data: familyMember } = useQuery({
+  const { data: familyMember } = useQuery<FamilyMember>({
     queryKey: ["family-member", userData?.id],
     queryFn: async () => {
       if (!userData?.id) return null;
-      const { data, error } = await supabase
+      
+      // First get the family member id
+      const { data: memberData, error: memberError } = await supabase
         .from("family_members")
-        .select("id, points_balance")
+        .select("id")
         .eq("user_id", userData.id)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (memberError) throw memberError;
+
+      // Then get their total points from points_history
+      const { data: pointsData, error: pointsError } = await supabase
+        .from("points_history")
+        .select("points")
+        .eq("user_id", memberData.id);
+
+      if (pointsError) throw pointsError;
+
+      const totalPoints = pointsData.reduce((sum, record) => sum + record.points, 0);
+
+      return {
+        id: memberData.id,
+        total_points: totalPoints
+      };
     },
     enabled: !!userData?.id,
   });
 
-  const { data: rewards } = useQuery({
+  const { data: rewards } = useQuery<Reward[]>({
     queryKey: ["available-rewards"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -76,7 +117,7 @@ export function RewardsTab() {
     },
   });
 
-  const { data: redemptionHistory } = useQuery({
+  const { data: redemptionHistory } = useQuery<RewardRedemption[]>({
     queryKey: ["redemption-history", familyMember?.id],
     queryFn: async () => {
       if (!familyMember?.id) return null;
@@ -105,7 +146,7 @@ export function RewardsTab() {
       return;
     }
 
-    if (!familyMember || familyMember.points_balance < pointsCost) {
+    if (!familyMember || familyMember.total_points < pointsCost) {
       toast.error("Not enough points to redeem this reward");
       return;
     }
@@ -135,7 +176,7 @@ export function RewardsTab() {
   );
 
   const suggestedRewards = rewards?.filter(reward => 
-    familyMember?.points_balance && reward.points_cost <= familyMember.points_balance
+    familyMember?.total_points && reward.points_cost <= familyMember.total_points
   ).slice(0, 3);
 
   return (
@@ -144,7 +185,7 @@ export function RewardsTab() {
       <Card className="bg-gradient-to-r from-purple-500 to-pink-500">
         <CardHeader className="text-white">
           <CardTitle className="text-3xl">
-            {familyMember?.points_balance || 0} Points
+            {familyMember?.total_points || 0} Points
           </CardTitle>
           <CardDescription className="text-white/80">
             Available to spend on rewards
@@ -197,13 +238,13 @@ export function RewardsTab() {
                     <Badge>{reward.points_cost} points</Badge>
                   </div>
                   <Progress 
-                    value={(familyMember?.points_balance || 0) / reward.points_cost * 100} 
+                    value={(familyMember?.total_points || 0) / reward.points_cost * 100} 
                     className="mb-2"
                   />
                   <Button
                     className="w-full mt-2"
                     variant="outline"
-                    disabled={!familyMember || familyMember.points_balance < reward.points_cost}
+                    disabled={!familyMember || familyMember.total_points < reward.points_cost}
                     onClick={() => handleRedeemReward(reward.id, reward.points_cost)}
                   >
                     Redeem Reward
