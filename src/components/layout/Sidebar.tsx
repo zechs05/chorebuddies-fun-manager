@@ -29,17 +29,17 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     email: user?.email || ""
   });
 
-  // Fetch family member data with user_id instead of email
+  // Fetch family member data using email
   const { data: familyMember } = useQuery({
-    queryKey: ["family-member", user?.id],
+    queryKey: ["family-member", user?.email],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.email) return null;
       
       const { data, error } = await supabase
         .from("family_members")
-        .select("name, email, user_id")
-        .eq("user_id", user.id)
-        .single();
+        .select("name, email")
+        .eq("email", user.email)
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching family member:", error);
@@ -47,7 +47,7 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
       }
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user?.email
   });
 
   useEffect(() => {
@@ -56,6 +56,7 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         name: familyMember.name || "",
         email: familyMember.email || user?.email || ""
       });
+      console.log("Found family member:", familyMember); // Debug log
     }
   }, [familyMember, user?.email]);
 
