@@ -1,17 +1,20 @@
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FamilyMemberCard } from "@/components/family/FamilyMemberCard";
-import { FamilyLeaderboard } from "@/components/family/FamilyLeaderboard";
 import { AddFamilyMemberDialog } from "@/components/family/AddFamilyMemberDialog";
 import { ChoreSwapRequest } from "@/components/chores/ChoreSwapRequest";
 import { ChoreChat } from "@/components/chores/ChoreChat";
-import type { FamilyMember, Permission, LeaderboardEntry, Chore } from "@/types/chores";
+import { EmptyFamilyState } from "@/components/family/EmptyFamilyState";
+import { FamilyMembersList } from "@/components/family/FamilyMembersList";
+import { useFamilyMembers } from "@/hooks/useFamilyMembers";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useAssignedChores } from "@/hooks/useAssignedChores";
+import type { FamilyMember, Permission, Chore } from "@/types/chores";
 
 const DEFAULT_PERMISSIONS: Permission = {
   manage_rewards: true,
@@ -28,50 +31,9 @@ export default function Family() {
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const [showSwapDialog, setShowSwapDialog] = useState(false);
 
-  const { data: familyMembers, isLoading } = useQuery({
-    queryKey: ["familyMembers"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("family_members")
-        .select(`
-          *,
-          achievements (*)
-        `)
-        .eq("user_id", user?.id);
-
-      if (error) throw error;
-      return data?.map(member => ({
-        ...member,
-        permissions: member.permissions as Permission || DEFAULT_PERMISSIONS
-      })) as FamilyMember[];
-    },
-    enabled: !!user,
-  });
-
-  const { data: leaderboard } = useQuery({
-    queryKey: ["leaderboard"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_leaderboard');
-      if (error) throw error;
-      return data as LeaderboardEntry[];
-    },
-    enabled: !!user,
-  });
-
-  const { data: assignedChores } = useQuery({
-    queryKey: ["assignedChores"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chores")
-        .select("*")
-        .eq("user_id", user?.id)
-        .eq("status", "pending");  // Changed from .is() to .eq()
-
-      if (error) throw error;
-      return data as Chore[];
-    },
-    enabled: !!user,
-  });
+  const { data: familyMembers, isLoading } = useFamilyMembers(user?.id);
+  const { data: leaderboard } = useLeaderboard(user?.id);
+  const { data: assignedChores } = useAssignedChores(user?.id);
 
   const addMemberMutation = useMutation({
     mutationFn: async (data: { 
@@ -178,33 +140,17 @@ export default function Family() {
         {isLoading ? (
           <p>Loading family members...</p>
         ) : !familyMembers?.length ? (
-          <div className="text-center py-8">
-            <p className="text-neutral-600 mb-4">No family members added yet.</p>
-            <Button
-              variant="outline"
-              onClick={() => setIsAddMemberOpen(true)}
-            >
-              Add Your First Family Member
-            </Button>
-          </div>
+          <EmptyFamilyState onAddMember={() => setIsAddMemberOpen(true)} />
         ) : (
-          <div className="space-y-6">
-            {leaderboard && <FamilyLeaderboard leaderboard={leaderboard} />}
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {familyMembers.map((member) => (
-                <FamilyMemberCard
-                  key={member.id}
-                  member={member}
-                  onEdit={(member) => {
-                    setEditingMember(member);
-                    setIsAddMemberOpen(true);
-                  }}
-                  onDelete={(id) => deleteMemberMutation.mutate(id)}
-                />
-              ))}
-            </div>
-          </div>
+          <FamilyMembersList
+            members={familyMembers}
+            leaderboard={leaderboard}
+            onEdit={(member) => {
+              setEditingMember(member);
+              setIsAddMemberOpen(true);
+            }}
+            onDelete={(id) => deleteMemberMutation.mutate(id)}
+          />
         )}
       </div>
     </DashboardLayout>
