@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import ChildDashboard from "@/pages/ChildDashboard";
 import Family from "@/pages/Family";
 import Chores from "@/pages/Chores";
+import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
 import Success from "@/pages/Success";
 
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
   {
     path: "/chores",
     element: <Chores />,
+  },
+  {
+    path: "/reports",
+    element: <Reports />,
   },
   {
     path: "/success",
