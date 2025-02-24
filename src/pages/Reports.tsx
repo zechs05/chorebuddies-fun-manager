@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -45,6 +44,7 @@ export default function Reports() {
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState("week");
   const [selectedMember, setSelectedMember] = useState<string>("all");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const { data: familyMembers } = useQuery({
     queryKey: ["family-members"],
@@ -196,7 +196,7 @@ export default function Reports() {
                 {timeRange === "week" ? "This Week" : "This Month"}
               </div>
               <p className="text-xs text-muted-foreground">
-                {format(new Date(), "MMM dd, yyyy")}
+                {format(selectedDate, "MMM dd, yyyy")}
               </p>
             </CardContent>
           </Card>
