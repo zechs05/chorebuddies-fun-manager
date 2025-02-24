@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Chore } from "@/types/chores";
 
 export default function Chores() {
   const { user } = useAuth();
@@ -39,7 +41,7 @@ export default function Chores() {
   const [filterPriority, setFilterPriority] = useState("all");
 
   // Fetch chores data
-  const { data: chores, isLoading: isChoresLoading } = useQuery({
+  const { data: rawChores, isLoading: isChoresLoading } = useQuery({
     queryKey: ["chores"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -58,6 +60,15 @@ export default function Chores() {
     },
     enabled: !!user,
   });
+
+  // Transform the raw data to match our Chore type
+  const chores: Chore[] = (rawChores || []).map(chore => ({
+    ...chore,
+    priority: (chore.priority as 'low' | 'medium' | 'high') || 'medium',
+    points: chore.points || 0,
+    verification_required: chore.verification_required || false,
+    auto_approve: chore.auto_approve || false,
+  }));
 
   // Fetch family members for assignment
   const { data: familyMembers } = useQuery({
