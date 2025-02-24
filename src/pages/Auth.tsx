@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoleSelector } from "@/components/auth/RoleSelector";
-import { ChildLoginForm } from "@/components/auth/ChildLoginForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type LoginRole = "parent" | "child" | null;
@@ -15,9 +14,18 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [loginRole, setLoginRole] = useState<LoginRole>(null);
-  const [hasChildAccounts, setHasChildAccounts] = useState(true); // Set to true to always show role selector
+  const [hasChildAccounts, setHasChildAccounts] = useState(true);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Handle role selection - Directly navigate to child dashboard for child role
+  const handleRoleSelect = (role: LoginRole) => {
+    if (role === "child") {
+      navigate("/child-dashboard");
+    } else {
+      setLoginRole(role);
+    }
+  };
 
   // Handle email confirmation
   useEffect(() => {
@@ -92,53 +100,11 @@ export default function Auth() {
     }
   };
 
-  const handleChildLogin = async (username: string, password: string) => {
-    try {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .rpc('check_child_credentials', {
-          p_username: username,
-          p_password: password
-        });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (!data || data.length === 0) {
-        throw new Error("Invalid username or password");
-      }
-
-      // Store child account info in localStorage for the session
-      localStorage.setItem('childAccount', JSON.stringify(data[0]));
-
-      // If credentials are valid, redirect to child dashboard
-      toast.success("Welcome back!");
-      navigate("/child-dashboard");
-      
-    } catch (error: any) {
-      console.error('Child login error:', error);
-      toast.error(error.message || "Invalid username or password");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Show role selector first
   if (!loginRole) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
-        <RoleSelector onRoleSelect={setLoginRole} hasChildAccounts={hasChildAccounts} />
-      </div>
-    );
-  }
-
-  // Show child login form if child role is selected
-  if (loginRole === "child") {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
-        <ChildLoginForm onLogin={handleChildLogin} onBack={() => setLoginRole(null)} />
+        <RoleSelector onRoleSelect={handleRoleSelect} hasChildAccounts={hasChildAccounts} />
       </div>
     );
   }
