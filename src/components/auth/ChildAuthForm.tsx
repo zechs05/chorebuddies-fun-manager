@@ -24,6 +24,7 @@ export function ChildAuthForm({ isSignUp, isLoading, setIsLoading }: ChildAuthFo
 
     try {
       if (isSignUp) {
+        // Check if email is pre-approved first
         const { data: isApproved } = await supabase.rpc('is_child_email_preapproved', {
           p_email: email
         });
@@ -32,36 +33,38 @@ export function ChildAuthForm({ isSignUp, isLoading, setIsLoading }: ChildAuthFo
           throw new Error("This email is not approved for child registration. Please ask your parent to add you to the family first.");
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        // Attempt signup
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               role: 'child'
-            },
-            emailRedirectTo: `${window.location.origin}/child-dashboard`
+            }
           }
         });
 
-        if (error) throw error;
+        if (signUpError) throw signUpError;
 
-        if (data.user) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
+        // After successful signup, attempt sign in
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-          if (signInError) throw signInError;
+        if (signInError) throw signInError;
 
-          toast.success("Registration successful! Redirecting to your dashboard...");
-          navigate("/child-dashboard");
-        }
+        toast.success("Registration successful! Redirecting to your dashboard...");
+        navigate("/child-dashboard");
       } else {
+        // Regular sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
         if (error) throw error;
+        
         toast.success("Signed in successfully!");
         navigate("/child-dashboard");
       }
