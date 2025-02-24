@@ -21,9 +21,6 @@ interface DateTimeFieldProps {
 }
 
 export function DateTimeField({ date, time, onDateChange, onTimeChange }: DateTimeFieldProps) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   return (
     <div className="space-y-2">
       <Label>Due Date & Time</Label>
@@ -47,11 +44,6 @@ export function DateTimeField({ date, time, onDateChange, onTimeChange }: DateTi
                 mode="single"
                 selected={date}
                 onSelect={onDateChange}
-                disabled={(date) => {
-                  const currentDate = new Date();
-                  currentDate.setHours(0, 0, 0, 0);
-                  return date < currentDate;
-                }}
                 initialFocus
                 className="rounded-md border"
               />

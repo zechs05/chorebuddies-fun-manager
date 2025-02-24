@@ -46,6 +46,8 @@ export default function Chores() {
   const [isAddChoreOpen, setIsAddChoreOpen] = useState(false);
   const [isAddFamilyMemberOpen, setIsAddFamilyMemberOpen] = useState(false);
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const [newFamilyMember, setNewFamilyMember] = useState({ name: "", role: "child" });
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -184,6 +186,37 @@ export default function Chores() {
         { name: "Consistent Achiever", earned: completedChores.length >= 10 },
       ]
     };
+  };
+
+  const reviewChoreMutation = useMutation({
+    mutationFn: async ({ choreId, approved }: { choreId: string; approved: boolean }) => {
+      const { data, error } = await supabase
+        .from("chores")
+        .update({
+          status: approved ? 'completed' : 'in_progress',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', choreId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chores"] });
+      toast.success("Chore review submitted!");
+      setIsReviewModalOpen(false);
+      setSelectedChore(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to review chore");
+    }
+  });
+
+  const handleReviewChore = async (approved: boolean) => {
+    if (!selectedChore) return;
+    await reviewChoreMutation.mutate({ choreId: selectedChore.id, approved });
   };
 
   return (
@@ -339,7 +372,14 @@ export default function Chores() {
                           By {chore.family_members?.name || 'Unassigned'}
                         </p>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedChore(chore);
+                          setIsReviewModalOpen(true);
+                        }}
+                      >
                         Review
                       </Button>
                     </div>
@@ -399,6 +439,45 @@ export default function Chores() {
           <ChoreList chores={chores} onUploadImage={handleImageUpload} />
         )}
       </div>
+
+      {/* Review Modal */}
+      <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Review Chore</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedChore && (
+              <>
+                <div>
+                  <h3 className="font-medium">{selectedChore.title}</h3>
+                  <p className="text-sm text-neutral-500">
+                    By {selectedChore.family_members?.name || 'Unassigned'}
+                  </p>
+                  {selectedChore.description && (
+                    <p className="mt-2 text-sm">{selectedChore.description}</p>
+                  )}
+                </div>
+                <div className="flex gap-4 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleReviewChore(false)}
+                    disabled={reviewChoreMutation.isPending}
+                  >
+                    Request Changes
+                  </Button>
+                  <Button
+                    onClick={() => handleReviewChore(true)}
+                    disabled={reviewChoreMutation.isPending}
+                  >
+                    Approve
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
