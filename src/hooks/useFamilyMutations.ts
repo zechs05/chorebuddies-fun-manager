@@ -13,6 +13,7 @@ type AddMemberData = {
   maxWeeklyChores?: number;
   fullName?: string;
   avatarUrl?: string;
+  status?: string;
 };
 
 export function useFamilyMutations(userId?: string) {
@@ -41,7 +42,7 @@ export function useFamilyMutations(userId?: string) {
           max_weekly_chores: data.maxWeeklyChores,
           avatar_url: data.avatarUrl,
           age: data.age,
-          status: 'active',
+          status: data.status || 'active',
           invitation_status: 'pending',
           invited_at: new Date().toISOString()
         });

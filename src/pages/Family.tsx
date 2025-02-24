@@ -42,8 +42,13 @@ export default function Family() {
     age?: number;
     preferredDifficulty?: string;
     maxWeeklyChores?: number;
+    fullName?: string;
+    avatarUrl?: string;
   }) => {
-    addMember.mutate(data, {
+    addMember.mutate({
+      ...data,
+      status: 'active'  // Add status field
+    }, {
       onSuccess: () => setIsAddMemberOpen(false),
     });
   };
