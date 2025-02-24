@@ -13,6 +13,7 @@ import Chores from "@/pages/Chores";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
 import Success from "@/pages/Success";
+import Profile from "@/pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
   {
     path: "/success",
     element: <Success />,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
   },
   {
     path: "*",

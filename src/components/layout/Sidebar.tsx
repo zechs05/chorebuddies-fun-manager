@@ -1,6 +1,6 @@
 
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Users, CheckSquare, Gift, X, Settings, LogOut, ChevronDown, BarChart } from "lucide-react";
+import { Home, Users, CheckSquare, Gift, X, Settings, LogOut, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/AuthProvider";
@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,13 +23,9 @@ interface SidebarProps {
 export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [profileData, setProfileData] = useState({
-    name: "",
-    email: user?.email || ""
-  });
 
   // Fetch family member data using email
-  const { data: familyMember } = useQuery({
+  const { data: familyMember, isLoading } = useQuery({
     queryKey: ["family-member", user?.email],
     queryFn: async () => {
       if (!user?.email) return null;
@@ -39,26 +34,18 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         .from("family_members")
         .select("name, email")
         .eq("email", user.email)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error("Error fetching family member:", error);
         return null;
       }
+      
+      console.log("Found family member:", data); // Debug log
       return data;
     },
     enabled: !!user?.email
   });
-
-  useEffect(() => {
-    if (familyMember) {
-      setProfileData({
-        name: familyMember.name || "",
-        email: familyMember.email || user?.email || ""
-      });
-      console.log("Found family member:", familyMember); // Debug log
-    }
-  }, [familyMember, user?.email]);
 
   const navItems = [
     { icon: Home, label: "Dashboard", to: "/child-dashboard" },
@@ -102,11 +89,17 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback>{profileData.name ? profileData.name[0] : ''}</AvatarFallback>
+                  <AvatarFallback>
+                    {familyMember?.name ? familyMember.name[0] : ''}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium">{profileData.name || 'Loading...'}</p>
-                  <p className="text-xs text-neutral-500">{profileData.email}</p>
+                  <p className="text-sm font-medium">
+                    {isLoading ? 'Loading...' : familyMember?.name || 'Unknown'}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {familyMember?.email || user?.email || ''}
+                  </p>
                 </div>
                 <ChevronDown className="h-4 w-4 text-neutral-500" />
               </div>
