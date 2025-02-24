@@ -109,30 +109,55 @@ export default function Auth() {
     const password = formData.get("password") as string;
 
     try {
-      // First check if this email is pre-approved for child registration
-      const { data: isApproved } = await supabase.rpc('is_child_email_preapproved', {
-        p_email: email
-      });
+      if (isSignUp) {
+        // First check if this email is pre-approved for child registration
+        const { data: isApproved } = await supabase.rpc('is_child_email_preapproved', {
+          p_email: email
+        });
 
-      if (!isApproved) {
-        throw new Error("This email is not approved for child registration. Please ask your parent to add you to the family first.");
-      }
-
-      // Sign up without email verification
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            role: 'child'
-          }
+        if (!isApproved) {
+          throw new Error("This email is not approved for child registration. Please ask your parent to add you to the family first.");
         }
-      });
 
-      if (error) throw error;
+        // Sign up without email verification for child accounts
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              role: 'child'
+            },
+            emailRedirectTo: `${window.location.origin}/child-dashboard`,
+            gotrue: {
+              skip_confirm: true // Skip email confirmation for child accounts
+            }
+          }
+        });
 
-      toast.success("Registration successful! Redirecting to your dashboard...");
-      navigate("/child-dashboard");
+        if (error) throw error;
+
+        if (data.user) {
+          // Since we're skipping email verification, we can sign in immediately
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (signInError) throw signInError;
+
+          toast.success("Registration successful! Redirecting to your dashboard...");
+          navigate("/child-dashboard");
+        }
+      } else {
+        // Regular sign in for existing child accounts
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast.success("Signed in successfully!");
+        navigate("/child-dashboard");
+      }
     } catch (error: any) {
       console.error('Child registration error:', error);
       toast.error(error.message);
@@ -158,7 +183,7 @@ export default function Auth() {
             {isLoading && searchParams.get('token_hash') 
               ? "Confirming your email..."
               : loginRole === 'child'
-              ? "Child Login"
+              ? isSignUp ? "Create your account" : "Welcome back"
               : isSignUp 
               ? "Create your account" 
               : "Welcome back"}
@@ -215,12 +240,27 @@ export default function Auth() {
               {isLoading
                 ? "Loading..."
                 : loginRole === 'child'
-                ? "Sign in as Child"
+                ? isSignUp
+                  ? "Create account"
+                  : "Sign in as Child"
                 : isSignUp
                 ? "Create account"
                 : "Sign in"}
             </Button>
           </form>
+          {loginRole === 'child' && (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-neutral-600 hover:text-primary"
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Sign up"}
+              </button>
+            </div>
+          )}
           {loginRole === 'parent' && (
             <div className="mt-4 text-center">
               <button
