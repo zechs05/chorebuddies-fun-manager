@@ -1,9 +1,41 @@
-
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/AuthProvider";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { QuickStats } from "@/components/dashboard/QuickStats";
+import { ChoresList } from "@/components/dashboard/ChoresList";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { 
+  ChevronDown, 
+  Filter, 
+  BarChart3, 
+  Award,
+  Bell,
+  Star,
+  Gift,
+  CheckCircle,
+  Medal,
+  Trophy,
+  Settings,
+  Users
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   BarChart,
   Bar,
@@ -12,225 +44,181 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
-import { Button } from '@/components/ui/button';
-import {
-  Clock,
-  Trophy,
-  Star,
-  Gift,
-  Settings,
-  Bell,
-  Users,
-} from 'lucide-react';
-import type {
-  Chore,
-  FamilyMember,
-  Reward,
-  ChoreStats,
-  LeaderboardEntry,
-} from '@/types/chores';
+} from "recharts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function ParentDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const { data: stats } = useQuery<ChoreStats>({
-    queryKey: ['chore-stats'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_chore_stats');
-      if (error) throw error;
-      return data as ChoreStats;
-    },
-  });
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
 
-  const { data: leaderboard } = useQuery<LeaderboardEntry[]>({
-    queryKey: ['leaderboard'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_leaderboard');
-      if (error) throw error;
-      return data as LeaderboardEntry[];
-    },
-  });
-
-  const { data: rewards } = useQuery<Reward[]>({
-    queryKey: ['rewards'],
+  const { data: chores, isLoading: isChoresLoading } = useQuery({
+    queryKey: ["chores"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('rewards')
-        .select('*')
-        .order('points_cost', { ascending: true });
+        .from("chores")
+        .select(`
+          *,
+          family_members (
+            name
+          )
+        `)
+        .eq("user_id", user?.id)
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
-      return (data || []).map(reward => ({
-        ...reward,
-        type: (reward.type || 'custom') as 'screen_time' | 'privilege' | 'allowance' | 'custom'
-      }));
+      return data;
     },
+    enabled: !!user,
   });
 
+  const { data: familyMembers } = useQuery({
+    queryKey: ["family-members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("family_members")
+        .select("*")
+        .eq("user_id", user?.id);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Compute stats
+  const activeChores = chores?.filter(chore => chore.status !== 'completed')?.length || 0;
+  const completedToday = chores?.filter(chore => {
+    if (chore.status !== 'completed') return false;
+    const choreDate = new Date(chore.updated_at);
+    const today = new Date();
+    return choreDate.toDateString() === today.toDateString();
+  })?.length || 0;
+
+  const totalPoints = chores?.reduce((sum, chore) => {
+    if (chore.status === 'completed') {
+      return sum + (chore.points || 0);
+    }
+    return sum;
+  }, 0) || 0;
+
+  if (!user) return null;
+
   return (
-    <div className="container mx-auto py-10">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Parent Dashboard</h1>
-        <div className="space-x-2">
-          <Button variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button>
-            <Bell className="h-4 w-4 mr-2" />
-            Notifications
-          </Button>
-        </div>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+    <DashboardLayout>
+      <Tabs defaultValue="chores" className="w-[400px]">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="rewards">Rewards</TabsTrigger>
-          <TabsTrigger value="family">Family</TabsTrigger>
+          <TabsTrigger value="chores">Chores</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-yellow-500" />
-                  Chores Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {stats ? (
-                  <>
-                    <p className="text-2xl font-semibold">{stats.completed_chores}</p>
-                    <p className="text-sm text-muted-foreground">Chores Completed</p>
-                  </>
-                ) : (
-                  <p>Loading stats...</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Trophy className="h-5 w-5 mr-2 text-purple-500" />
-                  Points Earned
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {stats ? (
-                  <>
-                    <p className="text-2xl font-semibold">{stats.total_points}</p>
-                    <p className="text-sm text-muted-foreground">Total Points Earned</p>
-                  </>
-                ) : (
-                  <p>Loading stats...</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Star className="h-5 w-5 mr-2 text-blue-500" />
-                  Completion Rate
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {stats ? (
-                  <>
-                    <p className="text-2xl font-semibold">{stats.completion_rate}%</p>
-                    <p className="text-sm text-muted-foreground">Chore Completion Rate</p>
-                  </>
-                ) : (
-                  <p>Loading stats...</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Gift className="h-5 w-5 mr-2 text-green-500" />
-                  Pending Chores
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {stats ? (
-                  <>
-                    <p className="text-2xl font-semibold">{stats.pending_chores}</p>
-                    <p className="text-sm text-muted-foreground">Chores Pending</p>
-                  </>
-                ) : (
-                  <p>Loading stats...</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="analytics">
+        <TabsContent value="chores">
           <Card>
             <CardHeader>
-              <CardTitle>Chore Completion Analytics</CardTitle>
+              <CardTitle>Chores</CardTitle>
+              <CardDescription>Manage chores</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart
-                  data={leaderboard}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="member_name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="total_points" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChoresList
+                chores={chores || []}
+                isLoading={isChoresLoading}
+              />
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="rewards">
+        
+        <TabsContent value="performance">
           <Card>
             <CardHeader>
-              <CardTitle>Available Rewards</CardTitle>
+              <CardTitle>Performance</CardTitle>
+              <CardDescription>Track performance</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {rewards ? (
-                  rewards.map((reward) => (
-                    <div key={reward.id} className="border rounded-md p-4">
-                      <h3 className="font-semibold">{reward.title}</h3>
-                      <p className="text-sm text-muted-foreground">{reward.description}</p>
-                      <p className="text-blue-500">{reward.points_cost} Points</p>
-                    </div>
-                  ))
-                ) : (
-                  <p>Loading rewards...</p>
-                )}
+              <div>
+                <p>Active Chores: {activeChores}</p>
+                <p>Completed Today: {completedToday}</p>
+                <p>Total Points: {totalPoints}</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="family">
+
+        <TabsContent value="settings">
           <Card>
             <CardHeader>
-              <CardTitle>Family Members</CardTitle>
+              <CardTitle>Dashboard Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Family members will be listed here */}
-                <p>List of family members will be displayed here.</p>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Notifications</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Email Notifications</p>
+                        <p className="text-sm text-gray-500">Receive notifications about chore updates</p>
+                      </div>
+                      <Button variant="outline">Configure</Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Push Notifications</p>
+                        <p className="text-sm text-gray-500">Get instant updates on your device</p>
+                      </div>
+                      <Button variant="outline">Configure</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Account Settings</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Change Password</p>
+                        <p className="text-sm text-gray-500">Update your account password</p>
+                      </div>
+                      <Button variant="outline">Update</Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Email Preferences</p>
+                        <p className="text-sm text-gray-500">Manage your email settings</p>
+                      </div>
+                      <Button variant="outline">Manage</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Family Management</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Family Members</p>
+                        <p className="text-sm text-gray-500">Add or remove family members</p>
+                      </div>
+                      <Button variant="outline">Manage</Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Roles & Permissions</p>
+                        <p className="text-sm text-gray-500">Configure access levels</p>
+                      </div>
+                      <Button variant="outline">Configure</Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </DashboardLayout>
   );
 }
