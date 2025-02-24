@@ -65,7 +65,7 @@ export default function Family() {
         .from("chores")
         .select("*")
         .eq("user_id", user?.id)
-        .is("status", "pending");
+        .eq("status", "pending");  // Changed from .is() to .eq()
 
       if (error) throw error;
       return data as Chore[];
