@@ -12,24 +12,37 @@ const plans = [
     id: "free",
     price: "$0",
     description: "Perfect for getting started",
-    features: ["1 User", "Basic features", "Limited support"],
+    features: ["Basic features", "Single user", "Community support"],
     cta: "Get started",
   },
   {
-    name: "Pro",
+    name: "ParentPal Pro",
     id: "pro",
-    price: "$19",
-    description: "For serious users",
-    features: ["5 Users", "Advanced features", "Priority support"],
+    price: "$14.99",
+    period: "CAD",
+    description: "For growing families",
+    features: [
+      "All Free features",
+      "Up to 5 family members",
+      "Priority support",
+      "Advanced tracking features"
+    ],
     cta: "Subscribe",
   },
   {
-    name: "Enterprise",
+    name: "ParentPro Ultimate",
     id: "enterprise",
-    price: "$49",
-    description: "For large teams",
-    features: ["Unlimited Users", "Custom features", "Dedicated support"],
-    cta: "Contact us",
+    price: "$22.99",
+    period: "CAD",
+    description: "For large families",
+    features: [
+      "All Pro features",
+      "Unlimited family members",
+      "24/7 dedicated support",
+      "Custom features",
+      "Family insights dashboard"
+    ],
+    cta: "Get Ultimate",
   },
 ];
 
@@ -68,10 +81,10 @@ export const Pricing = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Simple, transparent pricing
+            Choose your plan
           </h2>
           <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-            Choose the plan that's right for you. Upgrade or downgrade at any time.
+            Select the perfect plan for your family's needs
           </p>
         </div>
 
@@ -85,11 +98,15 @@ export const Pricing = () => {
                 <h3 className="text-2xl font-semibold text-gray-900">
                   {plan.name}
                 </h3>
-                <div className="mt-4">
+                <div className="mt-4 flex items-baseline">
                   <span className="text-5xl font-extrabold text-gray-900">
                     {plan.price}
                   </span>
-                  <span className="text-xl text-gray-500">/month</span>
+                  {plan.period && (
+                    <span className="ml-1 text-xl text-gray-500">
+                      {plan.period}/month
+                    </span>
+                  )}
                 </div>
                 <p className="mt-3 text-base text-gray-500">
                   {plan.description}

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import Stripe from 'https://esm.sh/stripe@13.6.0'
@@ -8,11 +7,11 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   httpClient: Stripe.createFetchHttpClient(),
 })
 
-// Replace these with your actual Stripe price IDs after creating products in Stripe Dashboard
+// Replace these with your actual Stripe price IDs from your Dashboard
 const PLANS = {
   free: { price: 0 },
-  pro: { price_id: 'price_CHANGE_THIS' },
-  enterprise: { price_id: 'price_CHANGE_THIS' }
+  pro: { price_id: 'price_YOUR_PRO_PRICE_ID' }, // $14.99 CAD plan
+  enterprise: { price_id: 'price_YOUR_ULTIMATE_PRICE_ID' } // $22.99 CAD plan
 }
 
 const corsHeaders = {
