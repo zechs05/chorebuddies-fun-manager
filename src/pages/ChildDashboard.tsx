@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { ChoreList } from "@/components/chores/ChoreList";
+import { useAuth } from "@/components/AuthProvider";
 import {
   Card,
   CardContent,
@@ -11,23 +11,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "@/components/AuthProvider";
+import {
+  Clock,
+  ListChecks,
+  ClipboardCheck,
+  AlertCircle,
+} from "lucide-react";
 import { Chore } from "@/types/chores";
 
 export default function ChildDashboard() {
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date()
-  );
+  const [filterStatus, setFilterStatus] = useState("all");
 
   // Fetch chores data
   const { data: rawChores, isLoading: isChoresLoading } = useQuery({
-    queryKey: ["chores", selectedDate],
+    queryKey: ["child-chores"],
     queryFn: async () => {
-      if (!selectedDate) return null;
-
-      const formattedDate = format(selectedDate, "yyyy-MM-dd");
-
       const { data, error } = await supabase
         .from("chores")
         .select(`
@@ -37,73 +36,125 @@ export default function ChildDashboard() {
           )
         `)
         .eq("assigned_to", user?.id)
-        .eq("due_date", formattedDate);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !!selectedDate,
+    enabled: !!user,
   });
 
-  const chores: Chore[] = (rawChores || []).map(chore => ({
-    ...chore,
-    priority: (chore.priority as 'low' | 'medium' | 'high') || 'medium',
-    points: chore.points || 0,
-    verification_required: chore.verification_required || false,
-    auto_approve: chore.auto_approve || false,
-    reminders_enabled: chore.reminders_enabled || false,
-    recurring: (chore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
-    status: chore.status || 'pending',
-    images: [],
-    messages: [],
-    reminders: []
-  }));
+  // Transform the raw data to match our Chore type
+  const chores: Chore[] = (rawChores || []).map(chore => {
+    const typedChore = chore as any;
+    return {
+      ...typedChore,
+      priority: (typedChore.priority as 'low' | 'medium' | 'high') || 'medium',
+      points: typedChore.points || 0,
+      verification_required: typedChore.verification_required || false,
+      auto_approve: typedChore.auto_approve || false,
+      reminders_enabled: typedChore.reminders_enabled || false,
+      recurring: (typedChore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
+      status: typedChore.status || 'pending',
+      images: [],
+      messages: [],
+      reminders: []
+    };
+  });
+
+  const filteredChores = chores?.filter((chore) => {
+    if (filterStatus !== "all" && chore.status !== filterStatus) return false;
+    return true;
+  });
+
+  // Calculate statistics
+  const stats = {
+    pending: chores?.filter((chore) => chore.status === "pending").length || 0,
+    inProgress: chores?.filter((chore) => chore.status === "in_progress").length || 0,
+    completed: chores?.filter((chore) => chore.status === "completed").length || 0,
+    overdue: chores?.filter((chore) => {
+      if (!chore.due_date) return false;
+      return new Date(chore.due_date) < new Date() && chore.status !== "completed";
+    }).length || 0,
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Overview Section */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            Child Dashboard
-          </h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">My Chores</h1>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose a date</CardTitle>
-            <CardDescription>
-              Select a date to view your chores for that day.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border"
-            />
-          </CardContent>
-        </Card>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-yellow-500" />
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">Pending</p>
+                  <p className="text-2xl font-semibold">{stats.pending}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <ListChecks className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">In Progress</p>
+                  <p className="text-2xl font-semibold">{stats.inProgress}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">Completed</p>
+                  <p className="text-2xl font-semibold">{stats.completed}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <div>
+                  <p className="text-sm font-medium text-neutral-600">Overdue</p>
+                  <p className="text-2xl font-semibold">{stats.overdue}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Chore List */}
         <Card>
           <CardHeader>
-            <CardTitle>Chores for {format(selectedDate || new Date(), "PPP")}</CardTitle>
-            <CardDescription>Here are your chores for the selected date.</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>My Chores</CardTitle>
+                <CardDescription>Manage and track your chores</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {isChoresLoading ? (
-              <p>Loading chores...</p>
-            ) : chores?.length > 0 ? (
-              <ul>
-                {chores.map((chore) => (
-                  <li key={chore.id} className="py-2">
-                    {chore.title} - {chore.status}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No chores assigned for this date.</p>
-            )}
+            <ChoreList
+              chores={filteredChores || []}
+              onUploadImage={(e, choreId, type) => {
+                // Handle image upload
+                console.log("Upload image", { choreId, type });
+              }}
+            />
           </CardContent>
         </Card>
       </div>

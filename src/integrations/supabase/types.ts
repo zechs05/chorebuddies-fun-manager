@@ -157,8 +157,11 @@ export type Database = {
           id: string
           points: number | null
           priority: string | null
+          recurring: string | null
+          reminders_enabled: boolean | null
           status: Database["public"]["Enums"]["chore_status"] | null
           title: string
+          type: string | null
           updated_at: string | null
           user_id: string
           verification_required: boolean | null
@@ -174,8 +177,11 @@ export type Database = {
           id?: string
           points?: number | null
           priority?: string | null
+          recurring?: string | null
+          reminders_enabled?: boolean | null
           status?: Database["public"]["Enums"]["chore_status"] | null
           title: string
+          type?: string | null
           updated_at?: string | null
           user_id: string
           verification_required?: boolean | null
@@ -191,8 +197,11 @@ export type Database = {
           id?: string
           points?: number | null
           priority?: string | null
+          recurring?: string | null
+          reminders_enabled?: boolean | null
           status?: Database["public"]["Enums"]["chore_status"] | null
           title?: string
+          type?: string | null
           updated_at?: string | null
           user_id?: string
           verification_required?: boolean | null
@@ -353,6 +362,7 @@ export type Database = {
           id: string
           points_cost: number
           title: string
+          type: string | null
           updated_at: string | null
           user_id: string
         }
@@ -362,6 +372,7 @@ export type Database = {
           id?: string
           points_cost: number
           title: string
+          type?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -371,6 +382,7 @@ export type Database = {
           id?: string
           points_cost?: number
           title?: string
+          type?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -424,6 +436,14 @@ export type Database = {
           parent_id: string
           username: string
         }[]
+      }
+      get_chore_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_leaderboard: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
     }
     Enums: {

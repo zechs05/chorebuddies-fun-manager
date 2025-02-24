@@ -61,19 +61,22 @@ export default function Chores() {
   });
 
   // Transform the raw data to match our Chore type
-  const chores: Chore[] = (rawChores || []).map(chore => ({
-    ...chore,
-    priority: (chore.priority as 'low' | 'medium' | 'high') || 'medium',
-    points: chore.points || 0,
-    verification_required: chore.verification_required || false,
-    auto_approve: chore.auto_approve || false,
-    reminders_enabled: chore.reminders_enabled || false,
-    recurring: (chore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
-    status: chore.status || 'pending',
-    images: [],
-    messages: [],
-    reminders: []
-  }));
+  const chores: Chore[] = (rawChores || []).map(chore => {
+    const typedChore = chore as any;
+    return {
+      ...typedChore,
+      priority: (typedChore.priority as 'low' | 'medium' | 'high') || 'medium',
+      points: typedChore.points || 0,
+      verification_required: typedChore.verification_required || false,
+      auto_approve: typedChore.auto_approve || false,
+      reminders_enabled: typedChore.reminders_enabled || false,
+      recurring: (typedChore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
+      status: typedChore.status || 'pending',
+      images: [],
+      messages: [],
+      reminders: []
+    };
+  });
 
   // Fetch family members for assignment
   const { data: familyMembers } = useQuery({

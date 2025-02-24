@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,7 +39,7 @@ export function ParentDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_chore_stats');
       if (error) throw error;
-      return JSON.parse(data);
+      return data as ChoreStats;
     },
   });
 
@@ -47,7 +48,7 @@ export function ParentDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_leaderboard');
       if (error) throw error;
-      return JSON.parse(data || '[]');
+      return data as LeaderboardEntry[];
     },
   });
 
@@ -61,7 +62,7 @@ export function ParentDashboard() {
       if (error) throw error;
       return (data || []).map(reward => ({
         ...reward,
-        type: (reward.type || 'custom') as Reward['type']
+        type: (reward.type || 'custom') as 'screen_time' | 'privilege' | 'allowance' | 'custom'
       }));
     },
   });
