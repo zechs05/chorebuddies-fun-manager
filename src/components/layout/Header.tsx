@@ -47,11 +47,10 @@ export const Header = ({ toggleSidebar }: HeaderProps) => {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update user profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user?.id);
+      // Update user metadata with new avatar URL
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
 
       if (updateError) throw updateError;
 
