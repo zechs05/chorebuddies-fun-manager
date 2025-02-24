@@ -27,7 +27,7 @@ export default function Auth() {
           });
           if (error) throw error;
           toast.success("Email confirmed successfully!");
-          navigate('/');
+          navigate('/dashboard');  // Changed this to redirect to dashboard
         } catch (error: any) {
           console.error('Verification error:', error);
           toast.error(error.message);
@@ -75,7 +75,7 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("Signed in successfully!");
-        navigate("/");
+        navigate("/dashboard");  // Changed this to redirect to dashboard
       }
     } catch (error: any) {
       console.error('Auth error:', error);
