@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -22,6 +22,7 @@ type Chore = {
 export default function Chores() {
   const { user } = useAuth();
   const [newChore, setNewChore] = useState("");
+  const queryClient = useQueryClient();
 
   const { data: chores, isLoading } = useQuery({
     queryKey: ["chores"],
@@ -40,52 +41,79 @@ export default function Chores() {
     },
   });
 
-  const handleAddChore = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newChore.trim() || !user) return;
-
-    try {
-      const { error } = await supabase.from("chores").insert({
-        title: newChore.trim(),
-        user_id: user.id,
-        status: "pending",
-      });
+  const addChoreMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { data, error } = await supabase
+        .from("chores")
+        .insert({
+          title: title.trim(),
+          user_id: user?.id,
+          status: "pending",
+        })
+        .select();
 
       if (error) throw error;
-
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chores"] });
       toast.success("Chore added successfully!");
       setNewChore("");
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
       toast.error(error.message);
-    }
-  };
+    },
+  });
 
-  const handleStatusChange = async (id: string, status: "pending" | "in_progress" | "completed") => {
-    try {
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "pending" | "in_progress" | "completed" }) => {
       const { error } = await supabase
         .from("chores")
         .update({ status })
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chores"] });
       toast.success("Chore status updated!");
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
       toast.error(error.message);
-    }
-  };
+    },
+  });
 
-  const handleDeleteChore = async (id: string) => {
-    try {
+  const deleteChoreMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("chores")
         .delete()
         .eq("id", id);
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chores"] });
       toast.success("Chore deleted successfully!");
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
       toast.error(error.message);
-    }
+    },
+  });
+
+  const handleAddChore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChore.trim() || !user) return;
+    addChoreMutation.mutate(newChore);
+  };
+
+  const handleStatusChange = (id: string, status: "pending" | "in_progress" | "completed") => {
+    updateStatusMutation.mutate({ id, status });
+  };
+
+  const handleDeleteChore = (id: string) => {
+    deleteChoreMutation.mutate(id);
   };
 
   return (
@@ -102,10 +130,14 @@ export default function Chores() {
             onChange={(e) => setNewChore(e.target.value)}
             placeholder="Add a new chore..."
             className="flex-1"
+            disabled={addChoreMutation.isPending}
           />
-          <Button type="submit">
+          <Button 
+            type="submit"
+            disabled={addChoreMutation.isPending}
+          >
             <PlusCircle className="h-4 w-4 mr-2" />
-            Add Chore
+            {addChoreMutation.isPending ? 'Adding...' : 'Add Chore'}
           </Button>
         </form>
 
@@ -137,6 +169,7 @@ export default function Chores() {
                       )
                     }
                     className="text-sm border rounded px-2 py-1"
+                    disabled={updateStatusMutation.isPending}
                   >
                     <option value="pending">Pending</option>
                     <option value="in_progress">In Progress</option>
@@ -146,6 +179,7 @@ export default function Chores() {
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeleteChore(chore.id)}
+                    disabled={deleteChoreMutation.isPending}
                   >
                     Delete
                   </Button>
