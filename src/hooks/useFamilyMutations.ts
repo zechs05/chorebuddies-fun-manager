@@ -22,9 +22,10 @@ export function useFamilyMutations(userId?: string) {
 
   const addMember = useMutation({
     mutationFn: async (data: AddMemberData) => {
+      // Check if the email is already registered - now correctly passing both parameters
       const { data: exists, error: checkError } = await supabase
         .rpc('check_family_member_email', {
-          p_email: data.email,
+          p_email: data.email.toLowerCase(),
           p_user_id: userId
         });
 
@@ -47,8 +48,8 @@ export function useFamilyMutations(userId?: string) {
           status: data.status || 'active',
           invitation_status: 'pending',
           invited_at: new Date().toISOString(),
-          email_verified: true, // Auto-verify emails for now since we're using a test email
-          child_auth_enabled: data.role === 'child' // Enable child auth automatically for child profiles
+          email_verified: true,
+          child_auth_enabled: data.role === 'child'
         });
 
       if (error) {
@@ -80,7 +81,6 @@ export function useFamilyMutations(userId?: string) {
 
       if (response.error) {
         console.error("Error sending invitation:", response.error);
-        // We'll still add the member but notify about email issues
         toast.warning("Member added but there was an issue sending the invitation email. Please ensure email settings are configured in your Supabase project.");
         return;
       }
