@@ -22,6 +22,7 @@ export default function Auth() {
   // Check for child accounts on component mount
   useEffect(() => {
     const checkChildAccounts = async () => {
+      // Using type assertion since we know the structure
       const { count, error } = await supabase
         .from("child_accounts")
         .select("*", { count: 'exact', head: true });
@@ -111,14 +112,15 @@ export default function Auth() {
     try {
       setIsLoading(true);
       
-      // Call the database function to check child credentials
-      const { data, error } = await supabase.rpc('check_child_credentials', {
-        p_username: username,
-        p_password: password
-      });
+      // Using type assertion for the RPC call
+      const { data, error } = await supabase
+        .rpc('check_child_credentials', {
+          p_username: username,
+          p_password: password
+        });
 
       if (error) throw error;
-      if (!data || data.length === 0) {
+      if (!data || !Array.isArray(data) || data.length === 0) {
         throw new Error("Invalid username or password");
       }
 

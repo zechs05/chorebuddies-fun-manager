@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      child_accounts: {
+        Row: {
+          created_at: string | null
+          id: string
+          parent_id: string
+          password_hash: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          parent_id: string
+          password_hash: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          parent_id?: string
+          password_hash?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       chore_images: {
         Row: {
           chore_id: string | null
@@ -253,11 +280,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_child_credentials: {
+        Args: {
+          p_username: string
+          p_password: string
+        }
+        Returns: {
+          id: string
+          parent_id: string
+          username: string
+        }[]
+      }
     }
     Enums: {
       chore_status: "pending" | "in_progress" | "completed"
       subscription_tier: "free" | "pro" | "ultimate"
+      user_role: "parent" | "child"
     }
     CompositeTypes: {
       [_ in never]: never
