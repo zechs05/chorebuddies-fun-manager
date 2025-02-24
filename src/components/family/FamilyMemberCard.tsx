@@ -1,31 +1,87 @@
 
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import { Settings, MessageSquare, Trophy } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Settings, MessageSquare, Trophy, Upload } from "lucide-react";
 import { FamilyMemberStatus } from "./FamilyMemberStatus";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { FamilyMember } from "@/types/chores";
 
 type FamilyMemberCardProps = {
   member: FamilyMember;
   onEdit: (member: FamilyMember) => void;
   onDelete: (id: string) => void;
+  onChat?: (member: FamilyMember) => void;
 };
 
-export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardProps) {
+export function FamilyMemberCard({ member, onEdit, onDelete, onChat }: FamilyMemberCardProps) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Upload image to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${member.id}-${Math.random()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update member profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('family_members')
+        .update({ avatar_url: publicUrl })
+        .eq('id', member.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Profile picture updated successfully!');
+    } catch (error: any) {
+      toast.error('Error uploading image: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={member.avatar_url || ''} />
-              <AvatarFallback>{member.name[0]}</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={member.avatar_url || ''} />
+                <AvatarFallback>{member.name[0]}</AvatarFallback>
+              </Avatar>
+              <label 
+                htmlFor={`avatar-${member.id}`}
+                className="absolute -bottom-1 -right-1 p-1 bg-white rounded-full border cursor-pointer hover:bg-gray-50"
+              >
+                <Upload className="h-3 w-3" />
+                <input
+                  type="file"
+                  id={`avatar-${member.id}`}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
             <div>
               <h3 className="font-medium">{member.name}</h3>
               <div className="flex gap-2 mt-1">
@@ -47,11 +103,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                if (window.confirm("Are you sure you want to remove this family member?")) {
-                  onDelete(member.id);
-                }
-              }}
+              onClick={() => onChat?.(member)}
             >
               <MessageSquare className="h-4 w-4" />
             </Button>

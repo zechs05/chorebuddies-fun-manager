@@ -8,6 +8,7 @@ import { ChoreChat } from "@/components/chores/ChoreChat";
 import { EmptyFamilyState } from "@/components/family/EmptyFamilyState";
 import { FamilyMembersList } from "@/components/family/FamilyMembersList";
 import { FamilyHeader } from "@/components/family/FamilyHeader";
+import { FamilyChat } from "@/components/family/FamilyChat";
 import { useFamilyMembers } from "@/hooks/useFamilyMembers";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAssignedChores } from "@/hooks/useAssignedChores";
@@ -27,6 +28,7 @@ export default function Family() {
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [selectedChore, setSelectedChore] = useState<Chore | null>(null);
   const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [chatMember, setChatMember] = useState<FamilyMember | null>(null);
 
   const { data: familyMembers, isLoading } = useFamilyMembers(user?.id);
   const { data: leaderboard } = useLeaderboard(user?.id);
@@ -59,6 +61,14 @@ export default function Family() {
           defaultPermissions={DEFAULT_PERMISSIONS}
         />
 
+        {chatMember && (
+          <FamilyChat
+            isOpen={!!chatMember}
+            onClose={() => setChatMember(null)}
+            member={chatMember}
+          />
+        )}
+
         {selectedChore && (
           <>
             <ChoreChat
@@ -88,6 +98,7 @@ export default function Family() {
               setIsAddMemberOpen(true);
             }}
             onDelete={(id) => deleteMember.mutate(id)}
+            onChat={(member) => setChatMember(member)}
           />
         )}
       </div>
