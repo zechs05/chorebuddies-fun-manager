@@ -60,6 +60,12 @@ export function useFamilyMutations(userId?: string) {
         .eq('id', userId)
         .single();
 
+      console.log("Sending invitation with data:", {
+        email: data.email,
+        fullName: data.fullName,
+        invitedByName: currentUser?.full_name
+      });
+
       // Send invitation email
       const response = await supabase.functions.invoke('send-invitation', {
         body: {
@@ -71,15 +77,18 @@ export function useFamilyMutations(userId?: string) {
 
       if (response.error) {
         console.error("Error sending invitation:", response.error);
-        throw new Error("Failed to send invitation email");
+        throw new Error(`Failed to send invitation email: ${response.error.message || 'Unknown error'}`);
       }
+
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
       toast.success("Family member invited successfully! An invitation email has been sent.");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to add family member");
+      console.error("Full error details:", error);
+      toast.error(`Failed to add family member: ${error.message}`);
     }
   });
 
