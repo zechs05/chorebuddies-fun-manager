@@ -1,207 +1,144 @@
-
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Trophy, Star, Camera, Calendar, Check, Gift, Flame } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useAuth } from "@/components/AuthProvider";
-import type { Chore } from "@/types/chores";
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Check, ChevronsUpDown, PlusCircle, RefreshCw, X } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/components/ui/use-toast';
+import { Chore } from '@/types/chores';
 
 export default function ChildDashboard() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const today = new Date().toISOString().split('T')[0];
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedStatus, setSelectedStatus] = useState<string>('pending');
+  const { toast } = useToast();
 
-  // Fetch assigned chores
-  const { data: chores = [], isLoading: isLoadingChores } = useQuery({
-    queryKey: ["child-chores", user?.id],
+  const formattedDate = date ? format(date, 'yyyy-MM-dd') : '';
+
+  const { data: rawChores, refetch } = useQuery({
+    queryKey: ['chores', formattedDate, selectedStatus],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chores")
-        .select(`
-          *,
-          family_members (name)
-        `)
-        .eq("assigned_to", user?.id)
+      let query = supabase
+        .from('chores')
+        .select('*, family_members(name)')
+        .eq('status', selectedStatus)
         .order('due_date', { ascending: true });
 
-      if (error) throw error;
-      return data as Chore[];
-    },
-    enabled: !!user,
-  });
+      if (formattedDate) {
+        query = query.eq('due_date', formattedDate);
+      }
 
-  // Complete chore mutation
-  const completeChoreMutation = useMutation({
-    mutationFn: async (choreId: string) => {
-      const { error } = await supabase
-        .from("chores")
-        .update({ status: "completed" })
-        .eq("id", choreId);
+      const { data, error } = await query;
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["child-chores"] });
-      toast.success("Yay! Chore completed! 🎉");
+      if (error) {
+        toast({
+          title: 'Error fetching chores',
+          description: error.message,
+        });
+      }
+
+      return data;
     },
   });
 
-  // Calculate progress
-  const totalChores = chores.length;
-  const completedChores = chores.filter(chore => chore.status === "completed").length;
-  const progress = totalChores > 0 ? (completedChores / totalChores) * 100 : 0;
-  const totalPoints = chores.reduce((sum, chore) => sum + (chore.points || 0), 0);
+  const chores: Chore[] = (rawChores || []).map(chore => ({
+    ...chore,
+    priority: (chore.priority as 'low' | 'medium' | 'high') || 'medium',
+    points: chore.points || 0,
+    verification_required: chore.verification_required || false,
+    auto_approve: chore.auto_approve || false,
+    reminders_enabled: false,
+    recurring: 'none',
+    images: [],
+    messages: [],
+    reminders: []
+  }));
 
-  // Calculate streak
-  const streak = 5; // This would normally be calculated from the database
+  const choreStatuses = [
+    'pending',
+    'in_progress',
+    'completed',
+  ];
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Welcome Banner */}
-        <Card className="bg-gradient-to-r from-accent-yellow to-primary">
-          <CardHeader>
-            <CardTitle className="text-2xl text-white flex items-center gap-2">
-              <Star className="h-8 w-8" />
-              Welcome back, {user?.email?.split("@")[0]}!
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        {/* Progress Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Check className="h-5 w-5 text-primary" />
-                Today's Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Progress value={progress} className="h-4" />
-              <p className="mt-2 text-sm text-neutral-600">
-                {completedChores} of {totalChores} chores done
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Gift className="h-5 w-5 text-primary" />
-                Points Earned
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{totalPoints}</div>
-              <p className="text-sm text-neutral-600">Total points</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Flame className="h-5 w-5 text-primary" />
-                Streak
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{streak}</div>
-              <p className="text-sm text-neutral-600">Days in a row</p>
-            </CardContent>
-          </Card>
+    <div className="container mx-auto py-10">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Child Dashboard</h1>
+        <div className="space-x-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={'outline'}
+                className={cn(
+                  'w-[280px] justify-start text-left font-normal',
+                  !date && 'text-muted-foreground'
+                )}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                {date ? format(date, 'PPP') : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="bottom">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                disabled={(date) =>
+                  date > new Date() || date < new Date('2023-01-01')
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select a status" />
+            </SelectTrigger>
+            <SelectContent>
+              {choreStatuses.map((status) => (
+                <SelectItem key={status} value={status}>{status}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={() => refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
         </div>
-
-        {/* Today's Chores */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Today's Chores
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {isLoadingChores ? (
-                <p>Loading your chores...</p>
-              ) : chores.length === 0 ? (
-                <p>No chores assigned yet! 🎉</p>
-              ) : (
-                chores.map((chore) => (
-                  <div
-                    key={chore.id}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
-                  >
-                    <div>
-                      <h3 className="font-medium">{chore.title}</h3>
-                      <p className="text-sm text-neutral-600">
-                        {chore.points} points
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => {
-                          // TODO: Implement photo upload
-                          toast.info("Photo upload coming soon!");
-                        }}
-                      >
-                        <Camera className="h-4 w-4" />
-                        Add Photo
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => completeChoreMutation.mutate(chore.id)}
-                        disabled={chore.status === "completed"}
-                      >
-                        {chore.status === "completed" ? (
-                          "Done! 🎉"
-                        ) : (
-                          "Mark Done"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Achievements */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              Achievements
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 flex-wrap">
-              <Badge variant="secondary" className="text-sm">
-                5 Day Streak 🔥
-              </Badge>
-              <Badge variant="secondary" className="text-sm">
-                Early Bird 🌅
-              </Badge>
-              <Badge variant="secondary" className="text-sm">
-                Super Helper ⭐
-              </Badge>
-              <Badge variant="secondary" className="text-sm">
-                Task Master 👑
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
       </div>
-    </DashboardLayout>
+      <div className="grid grid-cols-1 gap-6">
+        {chores.map((chore) => (
+          <Card key={chore.id}>
+            <CardHeader>
+              <CardTitle>{chore.title}</CardTitle>
+              <CardDescription>{chore.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>Due Date: {chore.due_date}</p>
+              <p>Points: {chore.points}</p>
+              <p>Status: {chore.status}</p>
+              {chore.family_members && (
+                <p>Assigned To: {chore.family_members.name}</p>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button>View Details</Button>
+              <Button>Mark as Complete</Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }

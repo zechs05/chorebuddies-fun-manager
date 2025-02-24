@@ -22,7 +22,6 @@ import {
   Settings,
   Bell,
   Users,
-  BarChart2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type {
@@ -36,25 +35,25 @@ import type {
 export function ParentDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
-  const { data: choreStats } = useQuery<ChoreStats>({
+  const { data: stats } = useQuery({
     queryKey: ['chore-stats'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_chore_stats');
       if (error) throw error;
-      return data;
+      return data as ChoreStats;
     },
   });
 
-  const { data: leaderboard } = useQuery<LeaderboardEntry[]>({
+  const { data: leaderboard } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_leaderboard');
       if (error) throw error;
-      return data;
+      return (data || []) as LeaderboardEntry[];
     },
   });
 
-  const { data: rewards } = useQuery<Reward[]>({
+  const { data: rewards } = useQuery({
     queryKey: ['rewards'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,7 +61,10 @@ export function ParentDashboard() {
         .select('*')
         .order('points_cost', { ascending: true });
       if (error) throw error;
-      return data;
+      return (data || []).map(reward => ({
+        ...reward,
+        type: reward.type || 'custom'
+      })) as Reward[];
     },
   });
 
@@ -73,7 +75,7 @@ export function ParentDashboard() {
         .from('family_members')
         .select('*');
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
@@ -110,7 +112,7 @@ export function ParentDashboard() {
                   <div>
                     <p className="text-sm font-medium">Total Chores</p>
                     <p className="text-2xl font-semibold">
-                      {choreStats?.completed_chores || 0}
+                      {stats?.completed_chores || 0}
                     </p>
                   </div>
                 </div>
@@ -124,7 +126,7 @@ export function ParentDashboard() {
                   <div>
                     <p className="text-sm font-medium">Total Points</p>
                     <p className="text-2xl font-semibold">
-                      {choreStats?.total_points || 0}
+                      {stats?.total_points || 0}
                     </p>
                   </div>
                 </div>
@@ -138,7 +140,7 @@ export function ParentDashboard() {
                   <div>
                     <p className="text-sm font-medium">Completion Rate</p>
                     <p className="text-2xl font-semibold">
-                      {choreStats?.completion_rate || 0}%
+                      {stats?.completion_rate || 0}%
                     </p>
                   </div>
                 </div>
@@ -167,7 +169,7 @@ export function ParentDashboard() {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={leaderboard}>
+                  <BarChart data={leaderboard || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="member_name" />
                     <YAxis />
@@ -187,7 +189,7 @@ export function ParentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {leaderboard?.map((entry, index) => (
+                {(leaderboard || []).map((entry, index) => (
                   <div
                     key={entry.member_id}
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
@@ -225,7 +227,7 @@ export function ParentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {rewards?.map((reward) => (
+                {(rewards || []).map((reward) => (
                   <Card key={reward.id}>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">

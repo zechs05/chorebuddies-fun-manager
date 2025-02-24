@@ -68,6 +68,11 @@ export default function Chores() {
     points: chore.points || 0,
     verification_required: chore.verification_required || false,
     auto_approve: chore.auto_approve || false,
+    reminders_enabled: chore.reminders_enabled || false,
+    recurring: (chore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
+    images: [],
+    messages: [],
+    reminders: []
   }));
 
   // Fetch family members for assignment
