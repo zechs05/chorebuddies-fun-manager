@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,25 +15,9 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [loginRole, setLoginRole] = useState<LoginRole>(null);
-  const [hasChildAccounts, setHasChildAccounts] = useState(false);
+  const [hasChildAccounts, setHasChildAccounts] = useState(true); // Set to true to always show role selector
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
-  // Check for child accounts on component mount
-  useEffect(() => {
-    const checkChildAccounts = async () => {
-      // Using type assertion since we know the structure
-      const { count, error } = await supabase
-        .from("child_accounts")
-        .select("*", { count: 'exact', head: true });
-      
-      if (!error && count !== null) {
-        setHasChildAccounts(count > 0);
-      }
-    };
-
-    checkChildAccounts();
-  }, []);
 
   // Handle email confirmation
   useEffect(() => {
@@ -140,14 +125,22 @@ export default function Auth() {
     }
   };
 
-  // Show role selector if there are child accounts
-  if (!loginRole && hasChildAccounts) {
-    return <RoleSelector onRoleSelect={setLoginRole} hasChildAccounts={hasChildAccounts} />;
+  // Show role selector first
+  if (!loginRole) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+        <RoleSelector onRoleSelect={setLoginRole} hasChildAccounts={hasChildAccounts} />
+      </div>
+    );
   }
 
   // Show child login form if child role is selected
   if (loginRole === "child") {
-    return <ChildLoginForm onLogin={handleChildLogin} onBack={() => setLoginRole(null)} />;
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
+        <ChildLoginForm onLogin={handleChildLogin} onBack={() => setLoginRole(null)} />
+      </div>
+    );
   }
 
   // Parent login/signup form
