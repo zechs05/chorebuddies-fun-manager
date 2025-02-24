@@ -6,6 +6,7 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Success from "@/pages/Success";
 import Dashboard from "@/pages/Dashboard";
+import Chores from "@/pages/Chores";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/success" element={<Success />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/chores" element={<Chores />} />
         </Routes>
         <Toaster position="top-center" />
       </AuthProvider>
