@@ -36,7 +36,7 @@ serve(async (req) => {
     
     try {
       const { data, error } = await resend.emails.send({
-        from: "ChoreQuest <onboarding@resend.dev>",
+        from: "ParentPal <onboarding@resend.dev>",
         to: [email],
         subject: "Join ChoreQuest: Your Family Chore Management Platform",
         html: `
@@ -80,7 +80,7 @@ serve(async (req) => {
           details: emailError.message
         }),
         {
-          status: 200, // Return 200 even on email error to avoid mutation error
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -94,7 +94,7 @@ serve(async (req) => {
         details: error.message
       }),
       {
-        status: 200, // Return 200 to avoid mutation error
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
