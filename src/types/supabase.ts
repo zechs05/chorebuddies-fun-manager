@@ -1,6 +1,12 @@
-import { Database as DatabaseGenerated } from "@/integrations/supabase/types";
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-export interface Database extends DatabaseGenerated {
+export interface Database {
   public: {
     Tables: {
       achievements: {
@@ -316,6 +322,7 @@ export interface Database extends DatabaseGenerated {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: []
       }
       family_members: {
         Row: {
