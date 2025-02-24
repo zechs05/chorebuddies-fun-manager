@@ -46,23 +46,23 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const addChoreMutation = useMutation({
-    mutationFn: async (choreData: typeof newChore) => {
+    mutationFn: async (formData: typeof newChore) => {
       // Combine date and time
       let fullDueDate = null;
-      if (choreData.due_date) {
-        const [hours, minutes] = choreData.due_time.split(':');
-        fullDueDate = new Date(choreData.due_date);
+      if (formData.due_date) {
+        const [hours, minutes] = formData.due_time.split(':');
+        fullDueDate = new Date(formData.due_date);
         fullDueDate.setHours(parseInt(hours), parseInt(minutes));
       }
 
       // First create the chore
-      const { data: choreData, error: choreError } = await supabase
+      const { data: newChoreData, error: choreError } = await supabase
         .from("chores")
         .insert({
-          title: choreData.title.trim(),
-          description: choreData.description.trim(),
-          points: choreData.points,
-          assigned_to: choreData.assigned_to || null,
+          title: formData.title.trim(),
+          description: formData.description.trim(),
+          points: formData.points,
+          assigned_to: formData.assigned_to || null,
           due_date: fullDueDate?.toISOString() || null,
           user_id: user?.id,
           status: "pending",
@@ -73,13 +73,13 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
       if (choreError) throw choreError;
 
       // Then handle image upload if present
-      if (choreData.image) {
-        const fileExt = choreData.image.name.split('.').pop();
-        const filePath = `${choreData.id}/${Date.now()}.${fileExt}`;
+      if (formData.image && newChoreData) {
+        const fileExt = formData.image.name.split('.').pop();
+        const filePath = `${newChoreData.id}/${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from('chore-images')
-          .upload(filePath, choreData.image);
+          .upload(filePath, formData.image);
 
         if (uploadError) throw uploadError;
 
@@ -91,7 +91,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
         const { error: imageError } = await supabase
           .from('chore_images')
           .insert({
-            chore_id: choreData.id,
+            chore_id: newChoreData.id,
             image_url: publicUrl,
             type: 'reference',
             user_id: user?.id,
@@ -100,7 +100,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
         if (imageError) throw imageError;
       }
 
-      return choreData;
+      return newChoreData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chores"] });
