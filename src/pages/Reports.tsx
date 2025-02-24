@@ -19,6 +19,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, startOfWeek, endOfWeek, isSameMonth, isWithinInterval } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { 
   BarChart,
   Bar,
@@ -44,10 +45,7 @@ import { cn } from "@/lib/utils";
 export default function Reports() {
   const { user } = useAuth();
   const [selectedMember, setSelectedMember] = useState<string>("all");
-  const [date, setDate] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [date, setDate] = useState<DateRange>({
     from: startOfWeek(new Date()),
     to: new Date()
   });
@@ -251,7 +249,7 @@ export default function Reports() {
                         mode="range"
                         defaultMonth={date.from}
                         selected={date}
-                        onSelect={setDate}
+                        onSelect={(range: DateRange | undefined) => setDate(range || { from: undefined, to: undefined })}
                         numberOfMonths={2}
                       />
                     </PopoverContent>
