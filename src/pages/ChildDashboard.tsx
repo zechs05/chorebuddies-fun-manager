@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,9 +29,18 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RewardsTab } from "@/components/rewards/RewardsTab";
+import { AchievementsTab } from "@/components/achievements/AchievementsTab";
+import { LeaderboardTab } from "@/components/leaderboard/LeaderboardTab";
+import { MessagesTab } from "@/components/messages/MessagesTab";
+import { SettingsTab } from "@/components/settings/SettingsTab";
+import {
+  Settings2,
+} from "lucide-react";
 
 export default function ChildDashboard() {
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Fetch the current user's information and family member details
   const { data: userData } = useQuery({
@@ -115,6 +123,7 @@ export default function ChildDashboard() {
   };
 
   // Filter chores based on status
+  const [filterStatus, setFilterStatus] = useState("all");
   const filteredChores = chores?.filter((chore) => {
     if (filterStatus !== "all" && chore.status !== filterStatus) return false;
     return true;
@@ -143,7 +152,33 @@ export default function ChildDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-6 gap-4">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="rewards">
+            <Gift className="mr-2 h-4 w-4" />
+            Rewards
+          </TabsTrigger>
+          <TabsTrigger value="achievements">
+            <Award className="mr-2 h-4 w-4" />
+            Achievements
+          </TabsTrigger>
+          <TabsTrigger value="leaderboard">
+            <Trophy className="mr-2 h-4 w-4" />
+            Leaderboard
+          </TabsTrigger>
+          <TabsTrigger value="messages">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Messages
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            <Settings2 className="mr-2 h-4 w-4" />
+            Settings
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-4">
+          <div className="space-y-6">
         {/* Overview Section */}
         <section className="bg-white rounded-lg p-6 shadow-sm border border-neutral-200">
           <div className="flex items-center justify-between mb-6">
@@ -365,6 +400,28 @@ export default function ChildDashboard() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="rewards">
+          <RewardsTab />
+        </TabsContent>
+
+        <TabsContent value="achievements">
+          <AchievementsTab />
+        </TabsContent>
+
+        <TabsContent value="leaderboard">
+          <LeaderboardTab />
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <MessagesTab />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <SettingsTab />
+        </TabsContent>
+      </Tabs>
     </DashboardLayout>
   );
 }
