@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, Calendar, Image as ImageIcon, MessageSquare } from "lucide-react";
+import { PlusCircle, CalendarIcon, Image as ImageIcon, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -327,11 +325,13 @@ export default function Chores() {
                         {newChore.due_date ? format(newChore.due_date, "PPP") : <span>Pick a date</span>}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={newChore.due_date}
-                        onSelect={(date) => setNewChore(prev => ({ ...prev, due_date: date }))}
+                        onSelect={(date: Date | null) => 
+                          setNewChore(prev => ({ ...prev, due_date: date }))
+                        }
                         initialFocus
                       />
                     </PopoverContent>
