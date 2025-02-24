@@ -23,10 +23,10 @@ export function FamilyMemberStatus({ status }: StatusProps) {
           variant: 'secondary' as const,
           className: 'bg-gray-100 text-gray-800'
         };
-      case 'needs_approval':
+      case 'needs_attention':
         return {
           icon: Clock,
-          label: 'Needs Approval',
+          label: 'Needs Attention',
           variant: 'outline' as const,
           className: 'bg-yellow-100 text-yellow-800'
         };
