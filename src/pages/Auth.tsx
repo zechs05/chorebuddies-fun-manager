@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -119,7 +118,7 @@ export default function Auth() {
           throw new Error("This email is not approved for child registration. Please ask your parent to add you to the family first.");
         }
 
-        // Sign up without email verification for child accounts
+        // Sign up the child account with minimal options
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -127,17 +126,14 @@ export default function Auth() {
             data: {
               role: 'child'
             },
-            emailRedirectTo: `${window.location.origin}/child-dashboard`,
-            gotrue: {
-              skip_confirm: true // Skip email confirmation for child accounts
-            }
+            emailRedirectTo: `${window.location.origin}/child-dashboard`
           }
         });
 
         if (error) throw error;
 
         if (data.user) {
-          // Since we're skipping email verification, we can sign in immediately
+          // Immediately sign in after registration since we know this is a pre-approved child account
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password
