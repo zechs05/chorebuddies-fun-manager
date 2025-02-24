@@ -24,6 +24,7 @@ type ChatMessage = {
   id: string;
   content: string;
   sender_id: string;
+  receiver_id: string;
   created_at: string;
 };
 
@@ -74,13 +75,13 @@ export function FamilyChat({ isOpen, onClose, member }: FamilyChatProps) {
   }, [isOpen, member.id]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !user) return;
 
     const { error } = await supabase
       .from('family_chat_messages')
       .insert({
         content: newMessage.trim(),
-        sender_id: user?.id,
+        sender_id: user.id,
         receiver_id: member.id,
       });
 

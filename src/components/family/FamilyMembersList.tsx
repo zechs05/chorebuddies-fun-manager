@@ -8,6 +8,7 @@ type FamilyMembersListProps = {
   leaderboard: LeaderboardEntry[] | undefined;
   onEdit: (member: FamilyMember) => void;
   onDelete: (id: string) => void;
+  onChat?: (member: FamilyMember) => void;
 };
 
 export function FamilyMembersList({
@@ -15,6 +16,7 @@ export function FamilyMembersList({
   leaderboard,
   onEdit,
   onDelete,
+  onChat,
 }: FamilyMembersListProps) {
   return (
     <div className="space-y-6">
@@ -26,6 +28,7 @@ export function FamilyMembersList({
             member={member}
             onEdit={onEdit}
             onDelete={onDelete}
+            onChat={onChat}
           />
         ))}
       </div>
