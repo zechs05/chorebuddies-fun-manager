@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +69,7 @@ export default function Chores() {
     auto_approve: chore.auto_approve || false,
     reminders_enabled: chore.reminders_enabled || false,
     recurring: (chore.recurring as 'none' | 'daily' | 'weekly' | 'monthly') || 'none',
+    status: chore.status || 'pending',
     images: [],
     messages: [],
     reminders: []
