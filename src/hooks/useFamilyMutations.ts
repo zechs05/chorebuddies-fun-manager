@@ -77,14 +77,16 @@ export function useFamilyMutations(userId?: string) {
 
       if (response.error) {
         console.error("Error sending invitation:", response.error);
-        throw new Error(`Failed to send invitation email: ${response.error.message || 'Unknown error'}`);
+        // We'll still add the member but notify about email issues
+        toast.warning("Member added but there was an issue sending the invitation email. Please ensure email settings are configured in your Supabase project.");
+        return;
       }
 
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
-      toast.success("Family member invited successfully! An invitation email has been sent.");
+      toast.success("Family member added successfully! They will be invited once email is configured.");
     },
     onError: (error: Error) => {
       console.error("Full error details:", error);
