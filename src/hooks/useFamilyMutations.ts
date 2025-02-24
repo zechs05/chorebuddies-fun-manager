@@ -37,19 +37,27 @@ export function useFamilyMutations(userId?: string) {
           name: data.fullName || data.email.split('@')[0],
           role: data.role,
           permissions: data.permissions,
-          age: data.age,
           preferred_difficulty: data.preferredDifficulty,
           max_weekly_chores: data.maxWeeklyChores,
           avatar_url: data.avatarUrl,
-          status: 'active'
+          age: data.age,
+          status: 'active',
+          invitation_status: 'pending',
+          invited_at: new Date().toISOString()
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding family member:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
       toast.success("Family member invited successfully!");
     },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to add family member");
+    }
   });
 
   const deleteMember = useMutation({
@@ -66,6 +74,9 @@ export function useFamilyMutations(userId?: string) {
       queryClient.invalidateQueries({ queryKey: ["familyMembers"] });
       toast.success("Family member removed successfully!");
     },
+    onError: (error: Error) => {
+      toast.error("Failed to remove family member");
+    }
   });
 
   return {
