@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -9,16 +10,15 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, startOfWeek, endOfWeek } from "date-fns";
+import { format, subDays, startOfWeek, endOfWeek, isSameMonth, isWithinInterval } from "date-fns";
 import { 
   BarChart,
   Bar,
@@ -35,16 +35,22 @@ import {
   Download, 
   TrendingUp, 
   Activity,
-  Calendar,
+  Calendar as CalendarIcon,
   Award
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export default function Reports() {
   const { user } = useAuth();
-  const [timeRange, setTimeRange] = useState("week");
   const [selectedMember, setSelectedMember] = useState<string>("all");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: startOfWeek(new Date()),
+    to: new Date()
+  });
 
   const { data: familyMembers } = useQuery({
     queryKey: ["family-members"],
@@ -61,7 +67,7 @@ export default function Reports() {
   });
 
   const { data: choreHistory } = useQuery({
-    queryKey: ["chore-history", timeRange, selectedMember],
+    queryKey: ["chore-history", date.from, date.to, selectedMember],
     queryFn: async () => {
       let query = supabase
         .from("chores")
@@ -78,6 +84,14 @@ export default function Reports() {
         query = query.eq("assigned_to", selectedMember);
       }
 
+      if (date.from) {
+        query = query.gte('created_at', date.from.toISOString());
+      }
+      
+      if (date.to) {
+        query = query.lte('created_at', date.to.toISOString());
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -86,32 +100,25 @@ export default function Reports() {
   });
 
   const getTimeRangeData = () => {
-    if (!choreHistory) return [];
+    if (!choreHistory || !date.from) return [];
     
-    const now = new Date();
-    const startDate = timeRange === "week" 
-      ? startOfWeek(now) 
-      : subDays(now, 30);
-
-    const data = choreHistory
-      .filter(chore => new Date(chore.created_at) >= startDate)
-      .reduce((acc: any[], chore) => {
-        const date = format(new Date(chore.created_at), "MMM dd");
-        const existing = acc.find(item => item.date === date);
-        
-        if (existing) {
-          existing.total += 1;
-          if (chore.status === "completed") existing.completed += 1;
-        } else {
-          acc.push({
-            date,
-            total: 1,
-            completed: chore.status === "completed" ? 1 : 0
-          });
-        }
-        
-        return acc;
-      }, []);
+    const data = choreHistory.reduce((acc: any[], chore) => {
+      const dateStr = format(new Date(chore.created_at), "MMM dd");
+      const existing = acc.find(item => item.date === dateStr);
+      
+      if (existing) {
+        existing.total += 1;
+        if (chore.status === "completed") existing.completed += 1;
+      } else {
+        acc.push({
+          date: dateStr,
+          total: 1,
+          completed: chore.status === "completed" ? 1 : 0
+        });
+      }
+      
+      return acc;
+    }, []);
 
     return data;
   };
@@ -187,16 +194,16 @@ export default function Reports() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Active Period
+                Selected Period
               </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {timeRange === "week" ? "This Week" : "This Month"}
+                {date.from ? format(date.from, "MMM dd") : "Not set"} - {date.to ? format(date.to, "MMM dd") : "Not set"}
               </div>
               <p className="text-xs text-muted-foreground">
-                {format(selectedDate, "MMM dd, yyyy")}
+                Date range for analysis
               </p>
             </CardContent>
           </Card>
@@ -214,37 +221,56 @@ export default function Reports() {
               <div className="flex gap-4">
                 <div className="flex items-center gap-2">
                   <Label>Time Range</Label>
-                  <Select 
-                    value={timeRange} 
-                    onValueChange={setTimeRange}
-                  >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Select range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="week">This Week</SelectItem>
-                      <SelectItem value="month">This Month</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[240px] justify-start text-left font-normal",
+                          !date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date.from ? (
+                          date.to ? (
+                            <>
+                              {format(date.from, "LLL dd, y")} -{" "}
+                              {format(date.to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(date.from, "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Pick a date range</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={date.from}
+                        selected={date}
+                        onSelect={setDate}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label>Family Member</Label>
-                  <Select 
-                    value={selectedMember} 
-                    onValueChange={setSelectedMember}
+                  <select
+                    value={selectedMember}
+                    onChange={(e) => setSelectedMember(e.target.value)}
+                    className="border rounded p-2"
                   >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Select member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Members</SelectItem>
-                      {familyMembers?.map(member => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <option value="all">All Members</option>
+                    {familyMembers?.map(member => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
