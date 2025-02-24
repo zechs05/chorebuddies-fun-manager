@@ -2,12 +2,13 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { MessageSquare, ImageIcon, Pencil, Trash2 } from "lucide-react";
+import { MessageSquare, ImageIcon, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChoreChat } from "./ChoreChat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Chore } from "@/types/chores";
+import { Badge } from "@/components/ui/badge";
+import type { Chore } from "@/types/chores";
 
 type ChoreListProps = {
   chores: Chore[];
@@ -19,10 +20,23 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
   const queryClient = useQueryClient();
 
   const updateChoreMutation = useMutation({
-    mutationFn: async ({ choreId, status }: { choreId: string; status: Chore["status"] }) => {
+    mutationFn: async ({ choreId, status, verificationData }: { 
+      choreId: string; 
+      status: Chore["status"];
+      verificationData?: {
+        verified_at: string;
+        verified_by: string;
+      };
+    }) => {
       const { error } = await supabase
         .from("chores")
-        .update({ status })
+        .update({ 
+          status,
+          ...(verificationData && {
+            verified_at: verificationData.verified_at,
+            verified_by: verificationData.verified_by
+          })
+        })
         .eq("id", choreId);
 
       if (error) throw error;
@@ -55,12 +69,33 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
   });
 
   const handleStatusChange = (choreId: string, status: Chore["status"]) => {
-    updateChoreMutation.mutate({ choreId, status });
+    const chore = chores.find(c => c.id === choreId);
+    if (!chore) return;
+
+    const verificationData = status === 'completed' ? {
+      verified_at: new Date().toISOString(),
+      verified_by: supabase.auth.getUser()?.data.user?.id
+    } : undefined;
+
+    updateChoreMutation.mutate({ choreId, status, verificationData });
   };
 
   const handleDeleteChore = (choreId: string) => {
     if (window.confirm("Are you sure you want to delete this chore?")) {
       deleteChoreMutation.mutate(choreId);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-700';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'low':
+        return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-neutral-100 text-neutral-700';
     }
   };
 
@@ -73,9 +108,14 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-medium text-neutral-900">{chore.title}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-neutral-900">{chore.title}</h3>
+                <Badge className={getPriorityColor(chore.priority || 'medium')}>
+                  {chore.priority || 'medium'}
+                </Badge>
+              </div>
               {chore.description && (
-                <p className="text-sm text-neutral-600">{chore.description}</p>
+                <p className="text-sm text-neutral-600 mt-1">{chore.description}</p>
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -88,6 +128,26 @@ export function ChoreList({ chores, onUploadImage }: ChoreListProps) {
                 </div>
               )}
               <div className="flex gap-2">
+                {chore.verification_required && chore.status === 'completed' && !chore.verified_at && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleStatusChange(chore.id, 'completed')}
+                      className="text-green-600"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleStatusChange(chore.id, 'in_progress')}
+                      className="text-red-600"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

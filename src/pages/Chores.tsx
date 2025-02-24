@@ -76,8 +76,8 @@ export default function Chores() {
 
   const filteredChores = chores?.filter((chore) => {
     if (filterStatus !== "all" && chore.status !== filterStatus) return false;
-    if (filterAssignee !== "all" && chore.assigned_to !== filterAssignee)
-      return false;
+    if (filterAssignee !== "all" && chore.assigned_to !== filterAssignee) return false;
+    if (filterPriority !== "all" && chore.priority !== filterPriority) return false;
     return true;
   });
 

@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          badge_type: string
+          created_at: string | null
+          description: string | null
+          family_member_id: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          badge_type: string
+          created_at?: string | null
+          description?: string | null
+          family_member_id: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          created_at?: string | null
+          description?: string | null
+          family_member_id?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_family_member_id_fkey"
+            columns: ["family_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       child_accounts: {
         Row: {
           created_at: string | null
@@ -112,39 +150,54 @@ export type Database = {
       chores: {
         Row: {
           assigned_to: string | null
+          auto_approve: boolean | null
           created_at: string | null
           description: string | null
           due_date: string | null
           id: string
           points: number | null
+          priority: string | null
           status: Database["public"]["Enums"]["chore_status"] | null
           title: string
           updated_at: string | null
           user_id: string
+          verification_required: boolean | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           assigned_to?: string | null
+          auto_approve?: boolean | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           points?: number | null
+          priority?: string | null
           status?: Database["public"]["Enums"]["chore_status"] | null
           title: string
           updated_at?: string | null
           user_id: string
+          verification_required?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           assigned_to?: string | null
+          auto_approve?: boolean | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
           points?: number | null
+          priority?: string | null
           status?: Database["public"]["Enums"]["chore_status"] | null
           title?: string
           updated_at?: string | null
           user_id?: string
+          verification_required?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -224,6 +277,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          notification_preferences: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -231,6 +285,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          notification_preferences?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -238,7 +293,86 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          notification_preferences?: Json | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reward_redemptions: {
+        Row: {
+          child_id: string
+          created_at: string | null
+          id: string
+          points_spent: number
+          reward_id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string | null
+          id?: string
+          points_spent: number
+          reward_id: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string | null
+          id?: string
+          points_spent?: number
+          reward_id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_redemptions_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rewards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          points_cost: number
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          points_cost: number
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          points_cost?: number
+          title?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

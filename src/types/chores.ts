@@ -1,4 +1,3 @@
-
 export type FamilyMember = {
   id: string;
   name: string;
@@ -33,3 +32,15 @@ export type ChoreImage = {
   type: 'before' | 'after' | 'reference';
   created_at: string;
 };
+
+export type ChoreVerification = {
+  verified_at: string | null;
+  verified_by: string | null;
+  auto_approve: boolean;
+  verification_required: boolean;
+};
+
+export interface EnhancedChore extends Chore {
+  priority: 'low' | 'medium' | 'high';
+  verification: ChoreVerification;
+}
