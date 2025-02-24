@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, PlusCircle } from "lucide-react";
+import { CalendarIcon, PlusCircle, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -40,10 +40,41 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
     points: 0,
     assigned_to: "",
     due_date: null as Date | null,
+    due_time: "12:00", // Default to noon
+    image: null as File | null,
   });
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const addChoreMutation = useMutation({
     mutationFn: async (choreData: typeof newChore) => {
+      let imageUrl = null;
+
+      // Upload image if provided
+      if (choreData.image) {
+        const fileExt = choreData.image.name.split('.').pop();
+        const filePath = `${crypto.randomUUID()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('chore-images')
+          .upload(filePath, choreData.image);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('chore-images')
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrl;
+      }
+
+      // Combine date and time
+      let fullDueDate = null;
+      if (choreData.due_date) {
+        const [hours, minutes] = choreData.due_time.split(':');
+        fullDueDate = new Date(choreData.due_date);
+        fullDueDate.setHours(parseInt(hours), parseInt(minutes));
+      }
+
       const { data, error } = await supabase
         .from("chores")
         .insert({
@@ -51,9 +82,10 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
           description: choreData.description.trim(),
           points: choreData.points,
           assigned_to: choreData.assigned_to,
-          due_date: choreData.due_date?.toISOString(),
+          due_date: fullDueDate?.toISOString(),
           user_id: user?.id,
           status: "pending",
+          image_url: imageUrl,
         })
         .select();
 
@@ -69,13 +101,26 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
         points: 0,
         assigned_to: "",
         due_date: null,
+        due_time: "12:00",
+        image: null,
       });
+      setPreviewUrl(null);
       onOpenChange(false);
     },
     onError: (error: Error) => {
       toast.error(error.message);
     },
   });
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewChore(prev => ({ ...prev, image: file }));
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
 
   const handleAddChore = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,28 +189,67 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
             </select>
           </div>
           <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${!newChore.due_date && "text-muted-foreground"}`}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {newChore.due_date ? format(newChore.due_date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={newChore.due_date}
-                  onSelect={(date: Date | null) => 
-                    setNewChore(prev => ({ ...prev, due_date: date }))
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label>Due Date & Time</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={`flex-1 justify-start text-left font-normal ${!newChore.due_date && "text-muted-foreground"}`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newChore.due_date ? format(newChore.due_date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newChore.due_date}
+                    onSelect={(date) => setNewChore(prev => ({ ...prev, due_date: date }))}
+                    initialFocus
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={newChore.due_time}
+                onChange={(e) => setNewChore(prev => ({ ...prev, due_time: e.target.value }))}
+                className="w-24"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Image (Optional)</Label>
+            <div className="flex flex-col gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="cursor-pointer"
+              />
+              {previewUrl && (
+                <div className="relative mt-2">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-40 object-cover rounded-md"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      setNewChore(prev => ({ ...prev, image: null }));
+                      setPreviewUrl(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           <Button type="submit" className="w-full" disabled={addChoreMutation.isPending}>
             {addChoreMutation.isPending ? "Adding..." : "Add Chore"}
