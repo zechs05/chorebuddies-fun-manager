@@ -1,10 +1,11 @@
-
 export type FamilyMember = {
   id: string;
   name: string;
   role: string;
   points_balance?: number;
   avatar_url?: string | null;
+  email?: string; // Added to match database schema
+  invitation_status?: string; // Added to match database schema
 };
 
 export type ChoreImage = {
