@@ -12,6 +12,7 @@ type AddMemberData = {
   preferredDifficulty?: string;
   maxWeeklyChores?: number;
   fullName?: string;
+  avatarUrl?: string;
 };
 
 export function useFamilyMutations(userId?: string) {
@@ -39,6 +40,7 @@ export function useFamilyMutations(userId?: string) {
           age: data.age,
           preferred_difficulty: data.preferredDifficulty,
           max_weekly_chores: data.maxWeeklyChores,
+          avatar_url: data.avatarUrl,
           status: 'active'
         });
 

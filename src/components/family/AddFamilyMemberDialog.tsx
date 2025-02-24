@@ -12,6 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Upload } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { FamilyMember, Permission } from "@/types/chores";
 
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -27,6 +31,7 @@ type AddFamilyMemberDialogProps = {
     preferredDifficulty?: string;
     maxWeeklyChores?: number;
     fullName?: string;
+    avatarUrl?: string;
   }) => void;
   editingMember: FamilyMember | null;
   defaultPermissions: Permission;
@@ -48,6 +53,38 @@ export function AddFamilyMemberDialog({
     (editingMember?.preferred_difficulty as Difficulty) || "medium"
   );
   const [maxWeeklyChores, setMaxWeeklyChores] = useState(editingMember?.max_weekly_chores || 10);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(editingMember?.avatar_url);
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Upload image to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      toast.success('Profile picture uploaded successfully!');
+    } catch (error: any) {
+      toast.error('Error uploading image: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +96,7 @@ export function AddFamilyMemberDialog({
       age,
       preferredDifficulty,
       maxWeeklyChores,
+      avatarUrl,
     });
   };
 
@@ -71,6 +109,30 @@ export function AddFamilyMemberDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback>{fullName ? fullName[0] : "?"}</AvatarFallback>
+              </Avatar>
+              <label 
+                htmlFor="avatar-upload"
+                className="absolute bottom-0 right-0 p-1 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90"
+              >
+                <Upload className="h-4 w-4" />
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+            {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -202,7 +264,7 @@ export function AddFamilyMemberDialog({
             </div>
           )}
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={uploading}>
             {editingMember ? "Update" : "Send Invitation"}
           </Button>
         </form>
