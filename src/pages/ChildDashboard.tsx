@@ -1,9 +1,9 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ChoreList } from "@/components/chores/ChoreList";
-import { useAuth } from "@/components/AuthProvider";
 import {
   Card,
   CardContent,
@@ -20,7 +20,6 @@ import {
 import { Chore } from "@/types/chores";
 
 export default function ChildDashboard() {
-  const { user } = useAuth();
   const [filterStatus, setFilterStatus] = useState("all");
 
   // Fetch chores data
@@ -35,13 +34,11 @@ export default function ChildDashboard() {
             name
           )
         `)
-        .eq("assigned_to", user?.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
   });
 
   // Transform the raw data to match our Chore type
@@ -62,11 +59,6 @@ export default function ChildDashboard() {
     };
   });
 
-  const filteredChores = chores?.filter((chore) => {
-    if (filterStatus !== "all" && chore.status !== filterStatus) return false;
-    return true;
-  });
-
   // Calculate statistics
   const stats = {
     pending: chores?.filter((chore) => chore.status === "pending").length || 0,
@@ -78,10 +70,14 @@ export default function ChildDashboard() {
     }).length || 0,
   };
 
+  const filteredChores = chores?.filter((chore) => {
+    if (filterStatus !== "all" && chore.status !== filterStatus) return false;
+    return true;
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Overview Section */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-neutral-900">My Chores</h1>
         </div>

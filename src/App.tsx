@@ -8,6 +8,7 @@ import Auth from "@/pages/Auth";
 import Success from "@/pages/Success";
 import Dashboard from "@/pages/Dashboard";
 import Chores from "@/pages/Chores";
+import ChildDashboard from "@/pages/ChildDashboard";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/success" element={<Success />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/child-dashboard" element={<Dashboard />} />
             <Route path="/chores" element={<Chores />} />
           </Routes>
           <Toaster position="top-center" />
