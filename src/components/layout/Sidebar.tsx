@@ -29,28 +29,31 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     email: user?.email || ""
   });
 
-  // Fetch family member data
+  // Fetch family member data with user_id instead of email
   const { data: familyMember } = useQuery({
-    queryKey: ["family-member", user?.email],
+    queryKey: ["family-member", user?.id],
     queryFn: async () => {
-      if (!user?.email) return null;
+      if (!user?.id) return null;
       
       const { data, error } = await supabase
         .from("family_members")
-        .select("name, email")
-        .eq("email", user.email)
+        .select("name, email, user_id")
+        .eq("user_id", user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching family member:", error);
+        return null;
+      }
       return data;
     },
-    enabled: !!user?.email
+    enabled: !!user?.id
   });
 
   useEffect(() => {
     if (familyMember) {
       setProfileData({
-        name: familyMember.name,
+        name: familyMember.name || "",
         email: familyMember.email || user?.email || ""
       });
     }
@@ -98,10 +101,10 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback>{profileData.name[0]}</AvatarFallback>
+                  <AvatarFallback>{profileData.name ? profileData.name[0] : ''}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium">{profileData.name}</p>
+                  <p className="text-sm font-medium">{profileData.name || 'Loading...'}</p>
                   <p className="text-xs text-neutral-500">{profileData.email}</p>
                 </div>
                 <ChevronDown className="h-4 w-4 text-neutral-500" />
