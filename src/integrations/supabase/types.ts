@@ -326,40 +326,49 @@ export type Database = {
       }
       family_members: {
         Row: {
+          age: number | null
           avatar_url: string | null
           created_at: string | null
           email: string | null
           id: string
           invitation_status: string | null
           invited_at: string | null
+          max_weekly_chores: number | null
           name: string
           permissions: Json | null
+          preferred_difficulty: string | null
           role: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
           invitation_status?: string | null
           invited_at?: string | null
+          max_weekly_chores?: number | null
           name: string
           permissions?: Json | null
+          preferred_difficulty?: string | null
           role?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
           invitation_status?: string | null
           invited_at?: string | null
+          max_weekly_chores?: number | null
           name?: string
           permissions?: Json | null
+          preferred_difficulty?: string | null
           role?: string | null
           updated_at?: string | null
           user_id?: string
