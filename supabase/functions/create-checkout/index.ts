@@ -12,7 +12,7 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 const PLANS = {
   free: { price: 0 },
   pro: { price_id: 'price_1QvXoeCkL5ed5EgTpd1uTwAq' }, // $14.99 CAD ParentPal Pro
-  enterprise: { price_id: 'price_YOUR_ULTIMATE_PRICE_ID' } // $22.99 CAD ParentPro Ultimate - need this ID
+  enterprise: { price_id: 'price_1QvXp3CkL5ed5EgT4ZwapF6n' } // $22.99 CAD ParentPro Ultimate
 }
 
 const corsHeaders = {
