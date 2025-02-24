@@ -36,6 +36,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
     due_date: null as Date | null,
     due_time: "09:00",
     image: null as File | null,
+    recurring: "none" as "none" | "daily" | "weekly" | "monthly",
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -58,6 +59,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
           due_date: fullDueDate?.toISOString() || null,
           user_id: user?.id,
           status: "pending",
+          recurring: formData.recurring,
         })
         .select()
         .single();
@@ -103,6 +105,7 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
         due_date: null,
         due_time: "09:00",
         image: null,
+        recurring: "none",
       });
       setPreviewUrl(null);
       onOpenChange(false);
@@ -148,11 +151,13 @@ export function AddChoreForm({ isOpen, onOpenChange, familyMembers }: AddChoreFo
             description={newChore.description}
             points={newChore.points}
             assignedTo={newChore.assigned_to}
+            recurring={newChore.recurring}
             familyMembers={familyMembers}
             onTitleChange={(value) => setNewChore(prev => ({ ...prev, title: value }))}
             onDescriptionChange={(value) => setNewChore(prev => ({ ...prev, description: value }))}
             onPointsChange={(value) => setNewChore(prev => ({ ...prev, points: value }))}
             onAssignedToChange={(value) => setNewChore(prev => ({ ...prev, assigned_to: value }))}
+            onRecurringChange={(value) => setNewChore(prev => ({ ...prev, recurring: value }))}
           />
           <DateTimeField
             date={newChore.due_date}
