@@ -1,8 +1,11 @@
 
 import { Button } from "./ui/button";
 import { ArrowRight, Award, Calendar, CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="relative overflow-hidden">
       {/* Background decoration */}
@@ -22,7 +25,7 @@ export const Hero = () => {
             Transform household tasks into exciting adventures - where responsibility meets rewards!
           </p>
           <div className="flex justify-center gap-4 pt-4">
-            <Button size="lg" className="button-gradient text-lg" onClick={() => window.location.href = '/auth'}>
+            <Button size="lg" className="button-gradient text-lg" onClick={() => navigate('/auth')}>
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
