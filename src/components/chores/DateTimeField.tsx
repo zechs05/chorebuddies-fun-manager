@@ -39,12 +39,27 @@ export function DateTimeField({ date, time, onDateChange, onTimeChange }: DateTi
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0" align="start" side="bottom">
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={onDateChange}
-                disabled={(date) => date < new Date()}
+                onSelect={(date) => {
+                  console.log("Selected date:", date);
+                  if (date) {
+                    // Ensure we're working with a new Date object
+                    const newDate = new Date(date);
+                    // Set the time to noon to avoid timezone issues
+                    newDate.setHours(12, 0, 0, 0);
+                    onDateChange(newDate);
+                  } else {
+                    onDateChange(null);
+                  }
+                }}
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today;
+                }}
                 initialFocus
               />
             </PopoverContent>
