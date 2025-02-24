@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -18,14 +17,40 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Chore } from "@/types/chores";
+import { useEffect, useState } from "react";
 
 export default function ChildDashboard() {
   const [filterStatus, setFilterStatus] = useState("all");
+  const [childName, setChildName] = useState<string>("");
 
-  // Fetch chores data
-  const { data: rawChores, isLoading: isChoresLoading } = useQuery({
-    queryKey: ["child-chores"],
+  // Fetch the current user's information
+  const { data: userData } = useQuery({
+    queryKey: ["current-user"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      
+      // Get the child's name from family_members table
+      const { data: familyMember } = await supabase
+        .from("family_members")
+        .select("name")
+        .eq("email", user.email)
+        .single();
+      
+      if (familyMember) {
+        setChildName(familyMember.name);
+      }
+      
+      return user;
+    },
+  });
+
+  // Fetch only the chores assigned to this child
+  const { data: rawChores, isLoading: isChoresLoading } = useQuery({
+    queryKey: ["child-chores", userData?.id],
+    queryFn: async () => {
+      if (!userData?.id) return [];
+
       const { data, error } = await supabase
         .from("chores")
         .select(`
@@ -34,11 +59,13 @@ export default function ChildDashboard() {
             name
           )
         `)
+        .eq("assigned_to", userData.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
     },
+    enabled: !!userData?.id,
   });
 
   // Transform the raw data to match our Chore type
@@ -59,7 +86,7 @@ export default function ChildDashboard() {
     };
   });
 
-  // Calculate statistics
+  // Calculate statistics for the child's chores
   const stats = {
     pending: chores?.filter((chore) => chore.status === "pending").length || 0,
     inProgress: chores?.filter((chore) => chore.status === "in_progress").length || 0,
@@ -79,7 +106,10 @@ export default function ChildDashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-neutral-900">My Chores</h1>
+          <div>
+            <h1 className="text-2xl font-semibold text-neutral-900">Welcome, {childName}</h1>
+            <p className="text-neutral-500">Here are your assigned chores</p>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -139,7 +169,7 @@ export default function ChildDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>My Chores</CardTitle>
-                <CardDescription>Manage and track your chores</CardDescription>
+                <CardDescription>View and update your assigned chores</CardDescription>
               </div>
             </div>
           </CardHeader>
