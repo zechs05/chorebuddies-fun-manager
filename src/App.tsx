@@ -1,5 +1,7 @@
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Toaster } from "@/components/ui/sonner";
 import Index from "@/pages/Index";
@@ -10,6 +12,8 @@ import Family from "@/pages/Family";
 import Chores from "@/pages/Chores";
 import NotFound from "@/pages/NotFound";
 import Success from "@/pages/Success";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -48,10 +52,14 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-      <Toaster />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <AuthProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
