@@ -69,9 +69,11 @@ export function AchievementsTab() {
 
       if (error) throw error;
       
-      // Parse the JSON response and ensure it matches our LeaderboardEntry type
-      if (Array.isArray(data)) {
-        return data.map(entry => ({
+      // First cast the data to any to handle the JSON structure
+      const leaderboardData = data as any[];
+      
+      if (Array.isArray(leaderboardData)) {
+        return leaderboardData.map(entry => ({
           member_id: String(entry.member_id),
           member_name: String(entry.member_name),
           completed_achievements: Number(entry.completed_achievements),
