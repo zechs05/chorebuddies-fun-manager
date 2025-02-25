@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,26 @@ import { DashboardNotifications } from "@/components/dashboard/DashboardNotifica
 import { useAuth } from "@/components/AuthProvider";
 import { useAssignedChores } from "@/hooks/useAssignedChores";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Define types for our profile data
+type FamilyMemberProfile = {
+  id: string;
+  name: string;
+  email: string | null;
+  avatar_url: string | null;
+  user_id: string;
+  // ... other family member fields
+};
+
+type GeneralProfile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  // ... other profile fields
+};
+
+type ProfileData = FamilyMemberProfile | GeneralProfile;
 
 export default function ChildDashboard() {
   const { user } = useAuth();
@@ -33,7 +52,7 @@ export default function ChildDashboard() {
       }
 
       if (familyMember) {
-        return familyMember;
+        return familyMember as FamilyMemberProfile;
       }
 
       // Fallback to general profile if no family member found
@@ -48,7 +67,7 @@ export default function ChildDashboard() {
         return null;
       }
 
-      return profile;
+      return profile as GeneralProfile;
     },
     enabled: !!user?.id,
   });
@@ -65,6 +84,13 @@ export default function ChildDashboard() {
       if (!c.due_date) return false;
       return new Date(c.due_date) < new Date() && c.status !== 'completed';
     }).length || 0,
+  };
+
+  // Helper function to get display name
+  const getDisplayName = (profile: ProfileData | null) => {
+    if (!profile) return user?.email;
+    if ('name' in profile) return profile.name;
+    return profile.full_name || user?.email;
   };
 
   if (isProfileLoading || isChoresLoading) {
@@ -87,7 +113,7 @@ export default function ChildDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              Welcome back, {profile?.name || user?.email}!
+              Welcome back, {getDisplayName(profile)}!
             </h1>
             <p className="text-muted-foreground">
               {profile?.email || user?.email}
