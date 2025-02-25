@@ -19,12 +19,12 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
     e.preventDefault();
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const fullName = formData.get("fullName") as string;
-
     try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
+      const fullName = formData.get("fullName") as string;
+
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -36,26 +36,29 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
             emailRedirectTo: `${window.location.origin}/auth`,
           },
         });
+        
         if (error) throw error;
         
         if (data.user?.identities?.length === 0) {
-          toast.error("This email is already registered. Please sign in instead.");
-        } else {
-          toast.success("Please check your email for the confirmation link!");
-          setIsLoading(false);
+          throw new Error("This email is already registered. Please sign in instead.");
         }
+        
+        toast.success("Please check your email for the confirmation link!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
         if (error) throw error;
+        
         toast.success("Signed in successfully!");
         navigate("/dashboard");
       }
     } catch (error: any) {
       console.error('Auth error:', error);
       toast.error(error.message);
+    } finally {
       setIsLoading(false);
     }
   };
