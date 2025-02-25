@@ -5,16 +5,24 @@ import type { Chore } from "@/types/chores";
 
 export function useAssignedChores(userId?: string) {
   return useQuery({
-    queryKey: ["assignedChores"],
+    queryKey: ["assignedChores", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!userId) return [];
+
+      const { data: userChores, error: userChoresError } = await supabase
         .from("chores")
-        .select("*")
-        .eq("user_id", userId)
+        .select(`
+          *,
+          family_members (
+            name,
+            email
+          )
+        `)
+        .or(`user_id.eq.${userId},assigned_to.eq.${userId}`)
         .eq("status", "pending");
 
-      if (error) throw error;
-      return data as Chore[];
+      if (userChoresError) throw userChoresError;
+      return userChores as Chore[];
     },
     enabled: !!userId,
   });

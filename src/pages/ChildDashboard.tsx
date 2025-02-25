@@ -8,33 +8,53 @@ import { DashboardRewards } from "@/components/dashboard/DashboardRewards";
 import { DashboardAchievements } from "@/components/dashboard/DashboardAchievements";
 import { DashboardMessages } from "@/components/dashboard/DashboardMessages";
 import { DashboardNotifications } from "@/components/dashboard/DashboardNotifications";
+import { useAuth } from "@/components/AuthProvider";
+import { useAssignedChores } from "@/hooks/useAssignedChores";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChildDashboard() {
-  // Fetch user data and chores
-  const { data: userData } = useQuery({
-    queryKey: ["current-user"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
-      return user;
-    },
-  });
+  const { user } = useAuth();
 
-  const { data: chores } = useQuery({
-    queryKey: ["child-chores", userData?.id],
+  // Fetch user's profile data
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ["profile", user?.id],
     queryFn: async () => {
-      if (!userData?.id) return [];
+      if (!user?.id) return null;
       
-      const { data, error } = await supabase
-        .from("chores")
+      // First try to get family member profile
+      const { data: familyMember, error: familyError } = await supabase
+        .from("family_members")
         .select("*")
-        .eq("assigned_to", userData.id);
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      if (familyError) {
+        console.error("Error fetching family member:", familyError);
+      }
+
+      if (familyMember) {
+        return familyMember;
+      }
+
+      // Fallback to general profile if no family member found
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        return null;
+      }
+
+      return profile;
     },
-    enabled: !!userData?.id,
+    enabled: !!user?.id,
   });
+
+  // Use the updated useAssignedChores hook
+  const { data: chores, isLoading: isChoresLoading } = useAssignedChores(user?.id);
 
   // Calculate statistics
   const stats = {
@@ -47,9 +67,34 @@ export default function ChildDashboard() {
     }).length || 0,
   };
 
+  if (isProfileLoading || isChoresLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-[200px] w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Skeleton className="h-[300px]" />
+            <Skeleton className="h-[300px]" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              Welcome back, {profile?.name || user?.email}!
+            </h1>
+            <p className="text-muted-foreground">
+              {profile?.email || user?.email}
+            </p>
+          </div>
+        </div>
+
         <StatusCards stats={stats} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
