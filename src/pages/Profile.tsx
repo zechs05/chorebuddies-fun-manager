@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   const { data: familyMember, isLoading } = useQuery({
     queryKey: ["family-member", user?.email],
@@ -46,7 +46,7 @@ const Profile = () => {
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
                   <AvatarFallback>
-                    {familyMember?.name?.[0] || user?.email?.[0]}
+                    {userProfile?.name?.[0] || user?.email?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-1">
@@ -58,13 +58,13 @@ const Profile = () => {
                   ) : (
                     <>
                       <h2 className="text-2xl font-semibold">
-                        {familyMember?.name || user?.email}
+                        {userProfile?.name || user?.email}
                       </h2>
                       <p className="text-sm text-muted-foreground">
-                        {familyMember?.email || user?.email}
+                        {userProfile?.email || user?.email}
                       </p>
                       <p className="text-sm text-muted-foreground capitalize">
-                        Role: {familyMember?.role || 'Child'}
+                        Role: {userProfile?.role || 'Child'}
                       </p>
                     </>
                   )}
