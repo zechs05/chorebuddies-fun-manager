@@ -36,12 +36,10 @@ type MessageCategory = 'all' | 'reminders' | 'encouragement' | 'requests';
 interface Message {
   id: string;
   content: string;
-  category: MessageCategory;
   sender_id: string;
   receiver_id: string;
   created_at: string;
-  read: boolean;
-  reactions: string[];
+  updated_at: string;
 }
 
 export function MessagesTab() {
@@ -73,7 +71,7 @@ export function MessagesTab() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as Message[];
     },
   });
 
@@ -104,7 +102,6 @@ export function MessagesTab() {
         content: newMessage,
         sender_id: user.id,
         receiver_id: user.id, // For now, sending to self. This should be updated based on selected recipient
-        category: selectedCategory,
       });
 
       if (error) throw error;
@@ -117,9 +114,6 @@ export function MessagesTab() {
   };
 
   const filteredMessages = messages?.filter(message => {
-    if (selectedCategory !== 'all' && message.category !== selectedCategory) {
-      return false;
-    }
     if (searchQuery && !message.content.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -131,18 +125,26 @@ export function MessagesTab() {
       {/* Message Categories */}
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid grid-cols-4 gap-4">
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="all">
+            <span className="flex items-center">All</span>
+          </TabsTrigger>
           <TabsTrigger value="reminders">
-            <Clock className="h-4 w-4 mr-2" />
-            Reminders
+            <span className="flex items-center">
+              <Clock className="h-4 w-4 mr-2" />
+              Reminders
+            </span>
           </TabsTrigger>
           <TabsTrigger value="encouragement">
-            <Star className="h-4 w-4 mr-2" />
-            Encouragement
+            <span className="flex items-center">
+              <Star className="h-4 w-4 mr-2" />
+              Encouragement
+            </span>
           </TabsTrigger>
           <TabsTrigger value="requests">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Requests
+            <span className="flex items-center">
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Requests
+            </span>
           </TabsTrigger>
         </TabsList>
 
@@ -153,7 +155,6 @@ export function MessagesTab() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full"
-              prefix={<Search className="h-4 w-4 text-muted-foreground" />}
             />
           </div>
           <Button variant="outline">
@@ -178,7 +179,7 @@ export function MessagesTab() {
                 {filteredMessages?.map((message) => (
                   <div key={message.id} className="flex gap-4 p-4 bg-neutral-50 rounded-lg">
                     <Avatar>
-                      <AvatarImage src="/placeholder.svg" />
+                      <AvatarImage src="/placeholder.svg" alt="Avatar" />
                       <AvatarFallback>FM</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
