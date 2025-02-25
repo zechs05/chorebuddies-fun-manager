@@ -68,7 +68,18 @@ export function AchievementsTab() {
         .rpc('get_leaderboard');
 
       if (error) throw error;
-      return data as LeaderboardEntry[];
+      
+      // Parse the JSON response and ensure it matches our LeaderboardEntry type
+      if (Array.isArray(data)) {
+        return data.map(entry => ({
+          member_id: String(entry.member_id),
+          member_name: String(entry.member_name),
+          completed_achievements: Number(entry.completed_achievements),
+          completed_chores: Number(entry.completed_chores),
+          total_points: Number(entry.total_points)
+        }));
+      }
+      return [];
     },
   });
 
