@@ -16,7 +16,24 @@ import { AchievementCategorySection } from "./AchievementCategory";
 import { toast } from "sonner";
 import type { Achievement, AchievementCategory } from "@/types/chores";
 
+interface LeaderboardEntry {
+  member_id: string;
+  member_name: string;
+  completed_achievements: number;
+  completed_chores: number;
+  total_points: number;
+}
+
 export function AchievementsTab() {
+  const { data: userData } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      return user;
+    },
+  });
+
   const { data: achievements } = useQuery({
     queryKey: ["achievements"],
     queryFn: async () => {
@@ -34,30 +51,57 @@ export function AchievementsTab() {
     queryKey: ["upcoming-achievements"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('get_upcoming_achievements');
+        .from("achievements")
+        .select("*")
+        .lt("progress", "total_required")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Achievement[];
     },
   });
 
-  const { data: leaderboard } = useQuery({
+  const { data: leaderboard } = useQuery<LeaderboardEntry[]>({
     queryKey: ["achievement-leaderboard"],
     queryFn: async () => {
       const { data, error } = await supabase
         .rpc('get_leaderboard');
 
       if (error) throw error;
-      return data;
+      return data as LeaderboardEntry[];
     },
   });
 
+  const { data: familyMember } = useQuery({
+    queryKey: ["current-family-member", userData?.id],
+    queryFn: async () => {
+      if (!userData?.id) return null;
+      const { data, error } = await supabase
+        .from("family_members")
+        .select("id")
+        .eq("user_id", userData.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userData?.id,
+  });
+
   const shareAchievement = async (achievement: Achievement) => {
+    if (!userData?.id || !familyMember?.id) {
+      toast.error("Unable to share achievement");
+      return;
+    }
+
     try {
-      await supabase.from('family_chat_messages').insert({
+      const { error } = await supabase.from('family_chat_messages').insert({
         content: `🎉 Look! I just unlocked the "${achievement.title}" achievement!`,
-        // Add necessary sender and receiver IDs
+        sender_id: familyMember.id,
+        receiver_id: familyMember.id, // Sending to self for now, could be modified to send to specific family member
       });
+
+      if (error) throw error;
       toast.success('Achievement shared with family!');
     } catch (error) {
       toast.error('Failed to share achievement');
@@ -152,7 +196,7 @@ export function AchievementsTab() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {leaderboard?.map((entry: any, index: number) => (
+            {leaderboard?.map((entry, index) => (
               <div key={entry.member_id} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
                 <div className="flex items-center gap-4">
                   <span className="font-bold text-lg">{index + 1}</span>
