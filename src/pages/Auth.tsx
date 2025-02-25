@@ -17,6 +17,15 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard');
+      }
+    });
+  }, [navigate]);
+
   const handleRoleSelect = (role: LoginRole) => {
     setLoginRole(role);
   };
@@ -48,6 +57,7 @@ export default function Auth() {
     handleEmailConfirmation();
   }, [searchParams, navigate]);
 
+  // Return loading state while checking initial session
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">

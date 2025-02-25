@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface ParentAuthFormProps {
   isSignUp: boolean;
@@ -15,16 +16,27 @@ interface ParentAuthFormProps {
 export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuthFormProps) {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard');
+      }
+    });
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent double submission
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const fullName = formData.get("fullName") as string;
+
     setIsLoading(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
-      const email = formData.get("email") as string;
-      const password = formData.get("password") as string;
-      const fullName = formData.get("fullName") as string;
-
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -36,28 +48,30 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
             emailRedirectTo: `${window.location.origin}/auth`,
           },
         });
-        
+
         if (error) throw error;
-        
-        if (data.user?.identities?.length === 0) {
+
+        if (!data.user || data.user.identities?.length === 0) {
           throw new Error("This email is already registered. Please sign in instead.");
         }
-        
+
         toast.success("Please check your email for the confirmation link!");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        
+
         if (error) throw error;
-        
-        toast.success("Signed in successfully!");
-        navigate("/dashboard");
+
+        if (data.session) {
+          toast.success("Signed in successfully!");
+          navigate("/dashboard");
+        }
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      toast.error(error.message);
+      toast.error(error.message || "An error occurred during authentication");
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +105,7 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
           required
           placeholder="you@example.com"
           disabled={isLoading}
+          autoComplete="email"
         />
       </div>
       <div>
@@ -104,9 +119,14 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
           required
           placeholder="••••••••"
           disabled={isLoading}
+          autoComplete={isSignUp ? "new-password" : "current-password"}
         />
       </div>
-      <Button type="submit" className="w-full button-gradient" disabled={isLoading}>
+      <Button 
+        type="submit" 
+        className="w-full button-gradient" 
+        disabled={isLoading}
+      >
         {isLoading ? (
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
