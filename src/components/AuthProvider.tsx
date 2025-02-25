@@ -55,44 +55,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (authUser: User) => {
     try {
-      // First check if user is a family member
-      const { data: familyMember, error: familyError } = await supabase
-        .from("family_members")
-        .select("*")
-        .eq("email", authUser.email)
-        .single();
-
-      if (familyError && familyError.code !== 'PGRST116') {
-        console.error("Error fetching family member:", familyError);
-      }
-
-      if (familyMember) {
-        setUserProfile({
-          id: familyMember.id,
-          role: familyMember.role as 'parent' | 'child',
-          name: familyMember.name,
-          email: familyMember.email || authUser.email || '',
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // If not a family member, check general profile
+      console.log("Fetching data for email:", authUser.email);
+      
+      // First check if user has a profile in profiles table (parent account)
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", authUser.id)
         .single();
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        setUserProfile(null);
-      } else if (profile) {
+      if (!profileError && profile) {
+        // This is a parent account
         setUserProfile({
           id: profile.id,
-          role: 'parent', // Default to parent for general profiles
-          name: profile.full_name || authUser.email?.split('@')[0] || '',
+          role: 'parent',
+          name: authUser.user_metadata?.full_name || profile.full_name || authUser.email?.split('@')[0] || '',
           email: profile.email || authUser.email || '',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // If no profile found, check family_members table
+      const { data: familyMember, error: familyError } = await supabase
+        .from("family_members")
+        .select("*")
+        .eq("email", authUser.email)
+        .single();
+
+      console.log("Found family member:", familyMember);
+
+      if (familyError) {
+        console.error("Error fetching family member:", familyError);
+        setUserProfile(null);
+      } else if (familyMember) {
+        setUserProfile({
+          id: familyMember.id,
+          role: familyMember.role as 'parent' | 'child',
+          name: familyMember.name,
+          email: familyMember.email || authUser.email || '',
         });
       }
     } catch (error) {
