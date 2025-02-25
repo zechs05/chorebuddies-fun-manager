@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 interface ParentAuthFormProps {
   isSignUp: boolean;
@@ -41,6 +42,7 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
           toast.error("This email is already registered. Please sign in instead.");
         } else {
           toast.success("Please check your email for the confirmation link!");
+          setIsLoading(false);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -54,7 +56,6 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
     } catch (error: any) {
       console.error('Auth error:', error);
       toast.error(error.message);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -72,6 +73,7 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
             type="text"
             required
             placeholder="John Doe"
+            disabled={isLoading}
           />
         </div>
       )}
@@ -85,6 +87,7 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
           type="email"
           required
           placeholder="you@example.com"
+          disabled={isLoading}
         />
       </div>
       <div>
@@ -97,10 +100,18 @@ export function ParentAuthForm({ isSignUp, isLoading, setIsLoading }: ParentAuth
           type="password"
           required
           placeholder="••••••••"
+          disabled={isLoading}
         />
       </div>
       <Button type="submit" className="w-full button-gradient" disabled={isLoading}>
-        {isLoading ? "Loading..." : isSignUp ? "Create account" : "Sign in"}
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>{isSignUp ? "Creating account..." : "Signing in..."}</span>
+          </div>
+        ) : (
+          <span>{isSignUp ? "Create account" : "Sign in"}</span>
+        )}
       </Button>
     </form>
   );

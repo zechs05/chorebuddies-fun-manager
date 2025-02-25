@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoleSelector } from "@/components/auth/RoleSelector";
 import { AuthCard } from "@/components/auth/AuthCard";
+import { Loader2 } from "lucide-react";
 
 type LoginRole = "parent" | "child" | null;
 
@@ -47,6 +48,17 @@ export default function Auth() {
     handleEmailConfirmation();
   }, [searchParams, navigate]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm text-muted-foreground">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!loginRole) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center px-4">
@@ -64,7 +76,7 @@ export default function Auth() {
         isLoading={isLoading}
         setIsLoading={setIsLoading}
         setLoginRole={setLoginRole}
-        isEmailConfirmation={Boolean(isLoading && searchParams.get('token_hash'))}
+        isEmailConfirmation={Boolean(searchParams.get('token_hash'))}
       />
     </div>
   );
